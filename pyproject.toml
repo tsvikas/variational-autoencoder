@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "vae"
+version = "0.1.0"
+description = ""
+authors = ["Tsvika S <tsvikas@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "var_encoder" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.0.0"
+torchvision = "^0.15.1"
+pytorch-lightning = "^2.0.2"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.1"
+ruff = "^0.0.264"
+
+[tool.ruff]
+select = ["ALL"]
+ignore = [
+    "D",
+    "ANN",
+    "COM812",
+    "ARG002",
+    "PLR",
+    "RET504",
+    "S101",
+    "E501",
+    "ERA001",
+    "EM101",
+    "C408",
+    "TRY003",
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
