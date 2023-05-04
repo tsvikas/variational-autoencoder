@@ -12,7 +12,7 @@ def train(seed=7, *, use_wandb=False):
     seed_everything(seed)
 
     # set model and data
-    datamodule = datamodules.get_images_datamodule(
+    datamodule = datamodules.ImagesDataModule(
         "CIFAR10",
         data_dir="./data",
         batch_size=256 if torch.cuda.is_available() else 64,

@@ -1,10 +1,22 @@
-from typing import Any
-
 import torch
 import torch.utils.data
 import torchvision
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.seed import isolate_rng
+
+DATASET_STATS = {
+    "MNIST": dict(
+        # this normalization is taken from
+        # https://pytorch-lightning.readthedocs.io/en/1.6.2/starter/core_guide.html
+        mean=[0.1307],
+        std=[0.3081],
+    ),
+    "CIFAR10": dict(
+        # this normalization is taken from pl-bolts sourcecode
+        mean=[x / 255 for x in [125.3, 123.0, 113.9]],
+        std=[x / 255 for x in [63.0, 62.1, 66.7]],
+    ),
+}
 
 
 def train_val_split(
@@ -13,7 +25,7 @@ def train_val_split(
     train_transform,
     val_transform,
     dataset_fn,
-    **dataset_kwargs
+    **dataset_kwargs,
 ):
     """load a dataset and split it, using a different transform for train and val"""
     lengths = [train_length, val_length]
@@ -28,7 +40,8 @@ def train_val_split(
 class ImagesDataModule(LightningDataModule):
     def __init__(
         self,
-        dataset_cls: type[torchvision.datasets.VisionDataset] | type[Any],
+        dataset_name: str,
+        *,
         batch_size: int,
         data_dir: str,
         extra_transforms: list[torch.nn.Module] | None = None,
@@ -38,12 +51,14 @@ class ImagesDataModule(LightningDataModule):
         val_size: int | float = 0.2,
     ):
         super().__init__()
-        self.dataset_cls = dataset_cls
+        self.dataset_cls = getattr(
+            torchvision.datasets, dataset_name
+        )  # type: type[torchvision.datasets.VisionDataset]
         self.batch_size = batch_size
         self.data_dir = data_dir
         self.extra_transforms = extra_transforms or []
-        self.mean = mean
-        self.std = std
+        self.mean = mean or DATASET_STATS[dataset_name]["mean"]
+        self.std = std or DATASET_STATS[dataset_name]["std"]
         self.num_workers = num_workers
         self._val_size = val_size
 
@@ -156,37 +171,3 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
-
-
-DATASET_KWARGS = {
-    "MNIST": dict(
-        # this normalization is taken from
-        # https://pytorch-lightning.readthedocs.io/en/1.6.2/starter/core_guide.html
-        mean=[0.1307],
-        std=[0.3081],
-    ),
-    "CIFAR10": dict(
-        # this normalization is taken from pl-bolts sourcecode
-        mean=[x / 255 for x in [125.3, 123.0, 113.9]],
-        std=[x / 255 for x in [63.0, 62.1, 66.7]],
-    ),
-}
-
-
-def get_images_datamodule(
-    dataset_name: str,
-    batch_size: int,
-    data_dir: str,
-    extra_transforms: list[torch.nn.Module] | None = None,
-    num_workers: int = 1,
-    val_size: int | float = 0.2,
-):
-    return ImagesDataModule(
-        dataset_cls=getattr(torchvision.datasets, dataset_name),
-        batch_size=batch_size,
-        data_dir=data_dir,
-        extra_transforms=extra_transforms,
-        num_workers=num_workers,
-        val_size=val_size,
-        **DATASET_KWARGS[dataset_name]
-    )
