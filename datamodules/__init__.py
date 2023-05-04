@@ -1,1 +1,1 @@
-from .cifar10 import CIFAR10
+from .images import get_images_datamodule

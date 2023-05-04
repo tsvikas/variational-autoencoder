@@ -2,27 +2,35 @@ import os
 
 import torch
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
+from torchvision import transforms
 
 import datamodules
 import models
 
-PATH_DATASETS = "./data"
-BATCH_SIZE = 256 if torch.cuda.is_available() else 64
-NUM_WORKERS = os.cpu_count() - 1
-
 
 def train(seed=7, *, use_wandb=False):
     seed_everything(seed)
+
     # set model and data
-    datamodule = datamodules.CIFAR10(
-        data_dir=PATH_DATASETS, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS
+    datamodule = datamodules.get_images_datamodule(
+        "CIFAR10",
+        data_dir="./data",
+        batch_size=256 if torch.cuda.is_available() else 64,
+        num_workers=os.cpu_count() - 1,
+        extra_transforms=[
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+        ],
     )
     model = models.Resnet(lr=0.05)
+
     # set trainer
-    # TODO: wandb.init(save_code=True)
+    # TODO: wandb.init(save_code=True) -- is it needed?
     logger = [loggers.CSVLogger(save_dir="logs/")]
     if use_wandb:
-        project_name = f"{model.__name__.lower()}_{datamodule.__name__.lower()}"
+        project_name = (
+            f"{model.__name__.lower()}-{datamodule.dataset_cls.__name__.lower()}"
+        )
         logger.append(loggers.WandbLogger(project=project_name))
     trainer = Trainer(
         max_epochs=30,
@@ -41,7 +49,7 @@ def train(seed=7, *, use_wandb=False):
 
 def main():
     train(seed=7, use_wandb=False)
-    # TODO: wandb.finish()?
+    # TODO: add wandb.finish()? it'll prevent resuming.
 
 
 if __name__ == "__main__":

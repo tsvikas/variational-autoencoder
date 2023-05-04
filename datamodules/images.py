@@ -26,82 +26,82 @@ def train_val_split(
 
 
 class ImagesDataModule(LightningDataModule):
-    dataset_cls: Any | type[torchvision.datasets.VisionDataset]
-    extra_transforms = None
-    mean = None
-    std = None
-
     def __init__(
         self,
-        data_dir: str,
+        dataset_cls: type[torchvision.datasets.VisionDataset] | type[Any],
         batch_size: int,
-        num_workers: int,
-        val_size: int | float = 0.1,
+        data_dir: str,
+        extra_transforms: list[torch.nn.Module] | None = None,
+        mean: list[float] | None = None,
+        std: list[float] | None = None,
+        num_workers: int = 1,
+        val_size: int | float = 0.2,
     ):
         super().__init__()
-        self.data_dir = data_dir
+        self.dataset_cls = dataset_cls
         self.batch_size = batch_size
+        self.data_dir = data_dir
+        self.extra_transforms = extra_transforms or []
+        self.mean = mean
+        self.std = std
         self.num_workers = num_workers
         self._val_size = val_size
 
         # defined in self.setup()
+        self.train_val_size = None
         self.train_set = None
         self.val_set = None
         self.test_set = None
-        self.train_val_size = None
-        self.test_size = None
 
     @property
     def train_size(self):
+        if self.train_val_size is None:
+            raise RuntimeError("train_size is undefined before setup")
         return self.train_val_size - self.val_size
 
     @property
     def val_size(self):
+        if self.train_val_size is None:
+            raise RuntimeError("val_size is undefined before setup")
         return (
             self._val_size
             if self._val_size >= 1
             else int(self._val_size * self.train_val_size)
         )
 
+    @property
+    def test_size(self):
+        if self.train_val_size is None:
+            raise RuntimeError("test_set is undefined before setup")
+        return len(self.test_set)
+
     def prepare_data(self):
         # download
         self.dataset_cls(self.data_dir, train=True, download=True)
         self.dataset_cls(self.data_dir, train=False, download=True)
 
-    @property
-    def normalize_transform(self):
-        return torchvision.transforms.Normalize(self.mean, self.std)
-
-    @property
-    def test_transforms(self):
-        return [torchvision.transforms.ToTensor(), self.normalize_transform]
-
-    @property
-    def val_transforms(self):
-        return self.test_transforms
-
-    @property
-    def train_transforms(self):
-        extra_transforms = self.extra_transforms or []
-        return [
-            *extra_transforms,
-            torchvision.transforms.ToTensor(),
-            self.normalize_transform,
-        ]
-
     def setup(self, stage=None):
         train_val_dataset = self.dataset_cls(self.data_dir, train=True)
-        if self.mean is None:
-            self.mean = train_val_dataset.data.mean((0, 1, 2))
-        if self.std is None:
-            self.std = train_val_dataset.data.std((0, 1, 2))
-
         self.train_val_size = len(train_val_dataset)
+
+        if self.mean is None:
+            self.mean = list(train_val_dataset.data.mean((0, 1, 2)))
+        if self.std is None:
+            self.std = list(train_val_dataset.data.std((0, 1, 2)))
+        normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
+        train_transforms = [
+            *self.extra_transforms,
+            torchvision.transforms.ToTensor(),
+            normalize_transform,
+        ]
+        test_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
+        val_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
+
         self.train_set, self.val_set = train_val_split(
             self.train_size,
             self.val_size,
-            torchvision.transforms.Compose(self.train_transforms),
-            torchvision.transforms.Compose(self.val_transforms),
+            torchvision.transforms.Compose(train_transforms),
+            torchvision.transforms.Compose(val_transforms),
             self.dataset_cls,
             root=self.data_dir,
             train=True,
@@ -111,9 +111,8 @@ class ImagesDataModule(LightningDataModule):
             root=self.data_dir,
             train=False,
             download=False,
-            transform=torchvision.transforms.Compose(self.test_transforms),
+            transform=torchvision.transforms.Compose(test_transforms),
         )
-        self.test_size = len(self.test_set)
 
     # added for exploration:
     @property
@@ -157,3 +156,37 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
+
+
+DATASET_KWARGS = {
+    "MNIST": dict(
+        # this normalization is taken from
+        # https://pytorch-lightning.readthedocs.io/en/1.6.2/starter/core_guide.html
+        mean=[0.1307],
+        std=[0.3081],
+    ),
+    "CIFAR10": dict(
+        # this normalization is taken from pl-bolts sourcecode
+        mean=[x / 255 for x in [125.3, 123.0, 113.9]],
+        std=[x / 255 for x in [63.0, 62.1, 66.7]],
+    ),
+}
+
+
+def get_images_datamodule(
+    dataset_name: str,
+    batch_size: int,
+    data_dir: str,
+    extra_transforms: list[torch.nn.Module] | None = None,
+    num_workers: int = 1,
+    val_size: int | float = 0.2,
+):
+    return ImagesDataModule(
+        dataset_cls=getattr(torchvision.datasets, dataset_name),
+        batch_size=batch_size,
+        data_dir=data_dir,
+        extra_transforms=extra_transforms,
+        num_workers=num_workers,
+        val_size=val_size,
+        **DATASET_KWARGS[dataset_name]
+    )
