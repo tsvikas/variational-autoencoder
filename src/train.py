@@ -1,11 +1,10 @@
 import os
 
+import datamodules
+import models
 import torch
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
-
-import datamodules
-import models
 
 
 def train(seed=7, *, use_wandb=False):
@@ -14,7 +13,7 @@ def train(seed=7, *, use_wandb=False):
     # set model and data
     datamodule = datamodules.ImagesDataModule(
         "CIFAR10",
-        data_dir="./data",
+        data_dir="../data",
         batch_size=256 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
         extra_transforms=[

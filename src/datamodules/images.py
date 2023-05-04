@@ -102,11 +102,11 @@ class ImagesDataModule(LightningDataModule):
         mean = list(train_val_dataset.data.mean((0, 1, 2)) / 255)
         if self.mean is None:
             self.mean = mean
-        assert self.mean == mean
+        torch.testing.assert_close(self.mean, mean, rtol=1e-3, atol=1e-3)
         std = list(train_val_dataset.data.std((0, 1, 2)) / 255)
         if self.std is None:
             self.std = std
-        assert self.std == std
+        torch.testing.assert_close(self.std, std, rtol=1e-3, atol=1e-3)
         normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
         train_transforms = [
             *self.extra_transforms,
