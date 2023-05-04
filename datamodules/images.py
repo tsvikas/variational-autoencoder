@@ -53,7 +53,7 @@ class ImagesDataModule(LightningDataModule):
         super().__init__()
         self.dataset_cls = getattr(
             torchvision.datasets, dataset_name
-        )  # type: type[torchvision.datasets.VisionDataset]
+        )  # type: type[torchvision.datasets.VisionDataset] | type[torchvision.datasets.CIFAR10]
         self.batch_size = batch_size
         self.data_dir = data_dir
         self.extra_transforms = extra_transforms or []
@@ -99,10 +99,14 @@ class ImagesDataModule(LightningDataModule):
         train_val_dataset = self.dataset_cls(self.data_dir, train=True)
         self.train_val_size = len(train_val_dataset)
 
+        mean = list(train_val_dataset.data.mean((0, 1, 2)) / 255)
         if self.mean is None:
-            self.mean = list(train_val_dataset.data.mean((0, 1, 2)))
+            self.mean = mean
+        assert self.mean == mean
+        std = list(train_val_dataset.data.std((0, 1, 2)) / 255)
         if self.std is None:
-            self.std = list(train_val_dataset.data.std((0, 1, 2)))
+            self.std = std
+        assert self.std == std
         normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
         train_transforms = [
             *self.extra_transforms,
