@@ -15,9 +15,7 @@ def train(seed=7, *, use_wandb=False):
     seed_everything(seed)
     # set model and data
     datamodule = datamodules.CIFAR10(
-        data_dir=PATH_DATASETS,
-        batch_size=BATCH_SIZE,
-        num_workers=NUM_WORKERS,
+        data_dir=PATH_DATASETS, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS
     )
     model = models.Resnet(lr=0.05)
     # set trainer
