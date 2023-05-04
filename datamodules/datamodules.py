@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from typing import Any
 
 import torch
 import torch.utils.data
@@ -26,10 +26,10 @@ def train_val_split(
 
 
 class ImagesDataModule(LightningDataModule):
-    dataset_cls: type[torchvision.datasets.VisionDataset]
-    train_transform: Callable | None = None
-    val_transform: Callable | None = None
-    test_transform: Callable | None = None
+    dataset_cls: Any | type[torchvision.datasets.VisionDataset]
+    extra_transforms = None
+    mean = None
+    std = None
 
     def __init__(
         self,
@@ -43,6 +43,13 @@ class ImagesDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self._val_size = val_size
+
+        # defined in self.setup()
+        self.train_set = None
+        self.val_set = None
+        self.test_set = None
+        self.train_val_size = None
+        self.test_size = None
 
     @property
     def train_size(self):
@@ -61,13 +68,40 @@ class ImagesDataModule(LightningDataModule):
         self.dataset_cls(self.data_dir, train=True, download=True)
         self.dataset_cls(self.data_dir, train=False, download=True)
 
+    @property
+    def normalize_transform(self):
+        return torchvision.transforms.Normalize(self.mean, self.std)
+
+    @property
+    def test_transforms(self):
+        return [torchvision.transforms.ToTensor(), self.normalize_transform]
+
+    @property
+    def val_transforms(self):
+        return self.test_transforms
+
+    @property
+    def train_transforms(self):
+        extra_transforms = self.extra_transforms or []
+        return [
+            *extra_transforms,
+            torchvision.transforms.ToTensor(),
+            self.normalize_transform,
+        ]
+
     def setup(self, stage=None):
-        self.train_val_size = len(self.dataset_cls(self.data_dir, train=True))
+        train_val_dataset = self.dataset_cls(self.data_dir, train=True)
+        if self.mean is None:
+            self.mean = train_val_dataset.data.mean((0, 1, 2))
+        if self.std is None:
+            self.std = train_val_dataset.data.std((0, 1, 2))
+
+        self.train_val_size = len(train_val_dataset)
         self.train_set, self.val_set = train_val_split(
             self.train_size,
             self.val_size,
-            self.train_transform,
-            self.val_transform,
+            torchvision.transforms.Compose(self.train_transforms),
+            torchvision.transforms.Compose(self.val_transforms),
             self.dataset_cls,
             root=self.data_dir,
             train=True,
@@ -77,7 +111,7 @@ class ImagesDataModule(LightningDataModule):
             root=self.data_dir,
             train=False,
             download=False,
-            transform=self.test_transform,
+            transform=torchvision.transforms.Compose(self.test_transforms),
         )
         self.test_size = len(self.test_set)
 
