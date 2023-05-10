@@ -17,13 +17,13 @@ def create_model(num_classes, in_channels=3):
 
 
 class Resnet(LightningModule):
-    def __init__(self, num_classes=10, lr=0.05):
+    def __init__(self, *, num_classes=10, num_channels=3, lr=0.05):
         super().__init__()
         self.save_hyperparameters("lr")
         self.lr = lr
         self.num_classes = num_classes
-        self.model = create_model(num_classes=num_classes)
-        self.example_input_array = torch.empty(1, 3, 224, 224)
+        self.model = create_model(num_classes=num_classes, in_channels=num_channels)
+        self.example_input_array = torch.empty(32, num_channels, 28, 28)
 
     def forward(self, x):
         out = self.model(x)

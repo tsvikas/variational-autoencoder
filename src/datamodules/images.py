@@ -41,24 +41,27 @@ class ImagesDataModule(LightningDataModule):
     def __init__(
         self,
         dataset_name: str,
+        num_classes: int,
+        num_channels: int,
         *,
         batch_size: int,
         data_dir: str,
         extra_transforms: list[torch.nn.Module] | None = None,
-        mean: list[float] | None = None,
-        std: list[float] | None = None,
         num_workers: int = 1,
         val_size: int | float = 0.2,
     ):
         super().__init__()
+        self.dataset_name = dataset_name
         self.dataset_cls = getattr(
             torchvision.datasets, dataset_name
         )  # type: type[torchvision.datasets.VisionDataset] | type[torchvision.datasets.CIFAR10]
+        self.num_classes = num_classes
+        self.num_channels = num_channels
         self.batch_size = batch_size
-        self.data_dir = data_dir
+        self.data_dir = data_dir  # TODO: change to .data/NAME
         self.extra_transforms = extra_transforms or []
-        self.mean = mean or DATASET_STATS[dataset_name]["mean"]
-        self.std = std or DATASET_STATS[dataset_name]["std"]
+        self.mean = DATASET_STATS.get(dataset_name, {}).get("mean", None)
+        self.std = DATASET_STATS.get(dataset_name, {}).get("std", None)
         self.num_workers = num_workers
         self._val_size = val_size
 
@@ -99,14 +102,26 @@ class ImagesDataModule(LightningDataModule):
         train_val_dataset = self.dataset_cls(self.data_dir, train=True)
         self.train_val_size = len(train_val_dataset)
 
-        mean = list(train_val_dataset.data.mean((0, 1, 2)) / 255)
+        all_images = train_val_dataset.data
+        if isinstance(all_images, torch.ByteTensor):
+            all_images = all_images / 255
+        all_images = all_images.float()
+        if all_images.ndim == 3:
+            all_images = all_images[:, :, :, None]
+        elif all_images.ndim == 4:
+            pass
+        else:
+            raise ValueError("ndim not in [3,4]")
+        mean = all_images.mean((0, 1, 2)).tolist()
+        std = all_images.std((0, 1, 2)).tolist()
+
         if self.mean is None:
             self.mean = mean
         torch.testing.assert_close(self.mean, mean, rtol=1e-3, atol=1e-3)
-        std = list(train_val_dataset.data.std((0, 1, 2)) / 255)
         if self.std is None:
             self.std = std
         torch.testing.assert_close(self.std, std, rtol=1e-3, atol=1e-3)
+
         normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
         train_transforms = [
             *self.extra_transforms,
@@ -132,15 +147,13 @@ class ImagesDataModule(LightningDataModule):
             download=False,
             transform=torchvision.transforms.Compose(test_transforms),
         )
+        assert len(self.test_set.classes) == self.num_classes
+        assert self.test_set[0][0].shape[0] == self.num_channels
 
     # added for exploration:
     @property
     def classes(self):
         return self.test_set.classes
-
-    @property
-    def num_classes(self):
-        return len(self.classes)
 
     @property
     def images_set(self):

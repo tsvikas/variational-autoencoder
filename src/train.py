@@ -4,16 +4,19 @@ import os
 import datamodules
 import models
 import torch
+import wandb
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
 
 
-def train(seed=7, *, use_wandb=False):
+def train(seed, *, use_wandb=True):
     seed_everything(seed)
 
     # set model and data
     datamodule = datamodules.ImagesDataModule(
-        "CIFAR10",
+        "FashionMNIST",
+        num_classes=10,
+        num_channels=1,
         data_dir="../data",
         batch_size=256 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
@@ -22,16 +25,21 @@ def train(seed=7, *, use_wandb=False):
             transforms.RandomHorizontalFlip(),
         ],
     )
-    model = models.Resnet(lr=0.05)
+    model = models.Resnet(
+        lr=0.05,
+        num_channels=datamodule.num_channels,
+        num_classes=datamodule.num_classes,
+    )
+    torch.set_float32_matmul_precision("medium")
 
     # set trainer
-    # TODO: wandb.init(save_code=True) -- is it needed?
-    logger = [loggers.CSVLogger(save_dir="logs/")]
+    project_name = f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
+    logger = [loggers.CSVLogger(save_dir=f"logs/{project_name}")]
     if use_wandb:
-        project_name = (
-            f"{model.__name__.lower()}-{datamodule.dataset_cls.__name__.lower()}"
-        )
-        logger.append(loggers.WandbLogger(project=project_name))
+        if wandb.run is not None:
+            wandb.finish()
+        wandb_logger = loggers.WandbLogger(project=project_name, save_code=True)
+        logger.append(wandb_logger)
     trainer = Trainer(
         max_epochs=30,
         devices=1,
@@ -39,16 +47,17 @@ def train(seed=7, *, use_wandb=False):
         callbacks=[
             callbacks.LearningRateMonitor(logging_interval="step"),
             callbacks.progress.TQDMProgressBar(refresh_rate=10),
+            callbacks.EarlyStopping("val_loss"),
         ],
         precision="bf16-mixed",
-        fast_dev_run=True,
     )
+    trainer.test(model, datamodule=datamodule, verbose=False)
     trainer.fit(model, datamodule=datamodule)
     trainer.test(model, datamodule=datamodule)
 
 
 def main():
-    train(seed=7, use_wandb=False)
+    train(seed=7)
     # TODO: add wandb.finish()? it'll prevent resuming.
 
 
