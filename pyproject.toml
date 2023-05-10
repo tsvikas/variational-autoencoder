@@ -3,8 +3,8 @@ name = "vae"
 version = "0.1.0"
 description = ""
 authors = ["Tsvika S <tsvikas@gmail.com>"]
-readme = "README.md"
-packages = [{ include = "var_encoder" }]
+#readme = "README.md"
+#packages = [{ include = "models", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
