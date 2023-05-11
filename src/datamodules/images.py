@@ -1,9 +1,13 @@
+import tempfile
+from pathlib import Path
+
 import torch
 import torch.utils.data
 import torchvision
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.seed import isolate_rng
 
+DATA_DIR = Path(tempfile.gettempdir()) / "images_data"
 DATASET_STATS = {
     "MNIST": dict(
         # this normalization is taken from
@@ -24,15 +28,15 @@ def train_val_split(
     val_length: int,
     train_transform,
     val_transform,
-    dataset_fn,
+    dataset_cls,
     **dataset_kwargs,
 ):
     """load a dataset and split it, using a different transform for train and val"""
     lengths = [train_length, val_length]
-    dataset_train = dataset_fn(**dataset_kwargs, transform=train_transform)
+    dataset_train = dataset_cls(**dataset_kwargs, transform=train_transform)
     with isolate_rng():
         train_split, _ = torch.utils.data.random_split(dataset_train, lengths)
-    dataset_val = dataset_fn(**dataset_kwargs, transform=val_transform)
+    dataset_val = dataset_cls(**dataset_kwargs, transform=val_transform)
     _, val_split = torch.utils.data.random_split(dataset_val, lengths)
     return train_split, val_split
 
@@ -40,28 +44,31 @@ def train_val_split(
 class ImagesDataModule(LightningDataModule):
     def __init__(
         self,
-        dataset_name: str,
-        num_classes: int,
-        num_channels: int,
+        dataset_name: str | None = None,
+        dataset_cls: torchvision.datasets.VisionDataset | None = None,
+        num_channels: int = None,
+        num_classes: int = None,
         *,
-        batch_size: int,
-        data_dir: str,
-        extra_transforms: list[torch.nn.Module] | None = None,
+        batch_size: int = None,
+        data_dir: str | Path = DATA_DIR,
+        train_transforms: list[torch.nn.Module] | None = None,
+        eval_transforms: list[torch.nn.Module] | None = None,
         num_workers: int = 1,
         val_size: int | float = 0.2,
     ):
         super().__init__()
-        self.dataset_name = dataset_name
-        self.dataset_cls = getattr(
+        if dataset_name is None and dataset_cls is None:
+            raise ValueError("must specify dataset_name or dataset_cls")
+        self.dataset_cls = dataset_cls or getattr(
             torchvision.datasets, dataset_name
         )  # type: type[torchvision.datasets.VisionDataset] | type[torchvision.datasets.CIFAR10]
-        self.num_classes = num_classes
-        self.num_channels = num_channels
-        self.batch_size = batch_size
-        self.data_dir = data_dir  # TODO: change to .data/NAME
-        self.extra_transforms = extra_transforms or []
-        self.mean = DATASET_STATS.get(dataset_name, {}).get("mean", None)
-        self.std = DATASET_STATS.get(dataset_name, {}).get("std", None)
+        self.dataset_name = dataset_name or self.dataset_cls.__name__
+        self.num_channels = int(num_channels)
+        self.num_classes = int(num_classes)
+        self.batch_size = int(batch_size)
+        self.data_dir = Path(data_dir).as_posix()
+        self.train_transforms = train_transforms or []
+        self.eval_transforms = eval_transforms or []
         self.num_workers = num_workers
         self._val_size = val_size
 
@@ -102,34 +109,33 @@ class ImagesDataModule(LightningDataModule):
         train_val_dataset = self.dataset_cls(self.data_dir, train=True)
         self.train_val_size = len(train_val_dataset)
 
-        all_images = train_val_dataset.data
-        if isinstance(all_images, torch.ByteTensor):
-            all_images = all_images / 255
-        all_images = all_images.float()
-        if all_images.ndim == 3:
-            all_images = all_images[:, :, :, None]
-        elif all_images.ndim == 4:
-            pass
-        else:
-            raise ValueError("ndim not in [3,4]")
-        mean = all_images.mean((0, 1, 2)).tolist()
-        std = all_images.std((0, 1, 2)).tolist()
+        # normalize
+        mean, std = calc_mean_and_std(train_val_dataset.data)
 
-        if self.mean is None:
-            self.mean = mean
-        torch.testing.assert_close(self.mean, mean, rtol=1e-3, atol=1e-3)
-        if self.std is None:
-            self.std = std
-        torch.testing.assert_close(self.std, std, rtol=1e-3, atol=1e-3)
+        # verify
+        saved_mean = DATASET_STATS.get(self.dataset_name, {}).get("mean", None)
+        saved_std = DATASET_STATS.get(self.dataset_name, {}).get("std", None)
+        if saved_mean is not None:
+            torch.testing.assert_close(saved_mean, mean, rtol=1e-3, atol=1e-3)
+        if saved_std is not None:
+            torch.testing.assert_close(saved_std, std, rtol=1e-3, atol=1e-3)
 
-        normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
+        normalize_transform = torchvision.transforms.Normalize(mean, std)
         train_transforms = [
-            *self.extra_transforms,
+            *self.train_transforms,
             torchvision.transforms.ToTensor(),
             normalize_transform,
         ]
-        test_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
-        val_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
+        val_transforms = [
+            *self.eval_transforms,
+            torchvision.transforms.ToTensor(),
+            normalize_transform,
+        ]
+        test_transforms = [
+            *self.eval_transforms,
+            torchvision.transforms.ToTensor(),
+            normalize_transform,
+        ]
 
         self.train_set, self.val_set = train_val_split(
             self.train_size,
@@ -188,3 +194,17 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
+
+
+def calc_mean_and_std(images):
+    # shape = (B H W) or (B H W C)
+    if images.max() > 1:
+        images = images / 255
+    images = images / 1.0
+    if images.ndim == 3:
+        images = images[:, :, :, None]
+    if images.ndim != 4:
+        raise ValueError("ndim not in [3, 4]")
+    mean = images.mean((0, 1, 2)).tolist()
+    std = images.std((0, 1, 2)).tolist()
+    return mean, std

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import tempfile
+from pathlib import Path
 
 import datamodules
 import models
@@ -10,36 +12,44 @@ from torchvision import transforms
 
 
 def train(seed, *, use_wandb=True):
-    seed_everything(seed)
+    # set seed
+    seed = seed_everything(seed)
 
-    # set model and data
+    # set data
     datamodule = datamodules.ImagesDataModule(
-        "FashionMNIST",
+        # see torchvision.datasets for options
+        "CIFAR10",
+        num_channels=3,
         num_classes=10,
-        num_channels=1,
-        data_dir="../data",
         batch_size=256 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
-        extra_transforms=[
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
+        train_transforms=[
+            transforms.RandomCrop(28),
+            # transforms.RandomHorizontalFlip(),
         ],
+        eval_transforms=[transforms.CenterCrop(28)],
     )
-    model = models.Resnet(
+
+    # set model
+    model = models.MultiLayerPerceptron(
         lr=0.05,
         num_channels=datamodule.num_channels,
         num_classes=datamodule.num_classes,
     )
     torch.set_float32_matmul_precision("medium")
 
-    # set trainer
+    # set logger(s)
     project_name = f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
-    logger = [loggers.CSVLogger(save_dir=f"logs/{project_name}")]
+    logger = []
+    save_dir = Path(tempfile.gettempdir()) / "logs" / project_name
+    save_dir.mkdir(exist_ok=True, parents=True)
     if use_wandb:
         if wandb.run is not None:
             wandb.finish()
-        wandb_logger = loggers.WandbLogger(project=project_name, save_code=True)
+        wandb_logger = loggers.WandbLogger(project=project_name, save_dir=save_dir)
         logger.append(wandb_logger)
+
+    # set trainer
     trainer = Trainer(
         max_epochs=30,
         devices=1,
@@ -47,10 +57,12 @@ def train(seed, *, use_wandb=True):
         callbacks=[
             callbacks.LearningRateMonitor(logging_interval="step"),
             callbacks.progress.TQDMProgressBar(refresh_rate=10),
-            callbacks.EarlyStopping("val_loss"),
+            # callbacks.EarlyStopping("val_loss"),
         ],
         precision="bf16-mixed",
+        fast_dev_run=True,
     )
+    trainer.logger.log_hyperparams({"seed": seed})
     trainer.test(model, datamodule=datamodule, verbose=False)
     trainer.fit(model, datamodule=datamodule)
     trainer.test(model, datamodule=datamodule)
@@ -58,7 +70,6 @@ def train(seed, *, use_wandb=True):
 
 def main():
     train(seed=7)
-    # TODO: add wandb.finish()? it'll prevent resuming.
 
 
 if __name__ == "__main__":

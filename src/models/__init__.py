@@ -1,2 +1,2 @@
-from .mnist_classifier import MNISTClassifier
+from .mlp import MultiLayerPerceptron
 from .resnet import Resnet
