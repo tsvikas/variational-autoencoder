@@ -18,15 +18,14 @@ class MultiLayerPerceptron(NLLClassifier):
         lr=0.05,
         gamma=0.95
     ):
-        super().__init__(num_channels=num_channels, num_classes=num_classes)
-        self.image_size = image_size
-        self.save_hyperparameters(ignore=["num_classes", "num_channels", "image_size"])
+        super().__init__(
+            image_size=image_size, num_channels=num_channels, num_classes=num_classes
+        )
+        self.save_hyperparameters(ignore=["image_size", "num_channels", "num_classes"])
         self.optimizer_hparams = {"lr": lr}
         self.scheduler_hparams = {"gamma": gamma}
         # create the model
-        self.layer_1 = nn.Linear(
-            num_channels * self.image_size * self.image_size, hidden_size_1
-        )
+        self.layer_1 = nn.Linear(num_channels * image_size * image_size, hidden_size_1)
         self.layer_2 = nn.Linear(hidden_size_1, hidden_size_2)
         self.layer_3 = nn.Linear(hidden_size_2, num_classes)
 

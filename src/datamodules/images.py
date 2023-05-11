@@ -32,33 +32,45 @@ def train_val_split(
     return train_split, val_split
 
 
+def parse_name_or_cls(name_or_cls: str | type[object], namespace):
+    if isinstance(name_or_cls, str):
+        name = name_or_cls
+        cls = getattr(namespace, name)
+    else:
+        cls = name_or_cls
+        name = cls.__name__
+    return name, cls
+
+
 class ImagesDataModule(LightningDataModule):
     """
     Convert between torchvision.datasets.VisionDataset and LightningDataModule
-    allow setting different transforms for train / eval
+    and allow setting different transforms for train / eval
     """
 
     def __init__(
         self,
-        dataset_name: str | None = None,
-        dataset_cls: type[torchvision.datasets.VisionDataset] | None = None,
-        num_channels: int = None,
-        num_classes: int = None,
+        dataset_name_or_cls: str
+        | type[torchvision.datasets.VisionDataset]
+        | type[torchvision.datasets.MNIST],
+        num_channels: int,
+        num_classes: int,
         *,
-        batch_size: int = None,
+        batch_size: int = 1,
         data_dir: str | Path = DATA_DIR,
         train_transforms: list[torch.nn.Module] | None = None,
         eval_transforms: list[torch.nn.Module] | None = None,
         num_workers: int = 1,
-        val_size: int | float = 0.2,
+        val_size_or_frac: int | float = 0.2,
     ):
         super().__init__()
-        if dataset_name is None and dataset_cls is None:
-            raise ValueError("must specify dataset_name or dataset_cls")
-        self.dataset_cls = dataset_cls or getattr(
-            torchvision.datasets, dataset_name
-        )  # type: type[torchvision.datasets.VisionDataset] | type[torchvision.datasets.CIFAR10]
-        self.dataset_name = dataset_name or self.dataset_cls.__name__
+        self.dataset_name, self.dataset_cls = parse_name_or_cls(
+            dataset_name_or_cls, torchvision.datasets
+        )
+        if not issubclass(self.dataset_cls, torchvision.datasets.VisionDataset):
+            raise ValueError(  # noqa: TRY004
+                f"{self.dataset_cls} is not a subclass of torchvision.datasets.VisionDataset"
+            )
         self.num_channels = int(num_channels)
         self.num_classes = int(num_classes)
         self.batch_size = int(batch_size)
@@ -66,7 +78,7 @@ class ImagesDataModule(LightningDataModule):
         self.train_transforms = train_transforms or []
         self.eval_transforms = eval_transforms or []
         self.num_workers = num_workers
-        self._val_size = val_size
+        self.val_size_or_frac = val_size_or_frac
 
         # defined in self.setup()
         self.train_val_size = None
@@ -86,9 +98,9 @@ class ImagesDataModule(LightningDataModule):
         if self.train_val_size is None:
             raise RuntimeError("val_size is undefined before setup")
         return (
-            int(self._val_size)
-            if self._val_size >= 1
-            else int(self._val_size * self.train_val_size)
+            int(self.val_size_or_frac)
+            if self.val_size_or_frac >= 1
+            else int(self.val_size_or_frac * self.train_val_size)
         )
 
     @property
@@ -127,6 +139,7 @@ class ImagesDataModule(LightningDataModule):
             self.normalize_transform,
         ]
 
+        # create dataset
         self.train_set, self.val_set = train_val_split(
             self.train_size,
             self.val_size,
@@ -143,6 +156,8 @@ class ImagesDataModule(LightningDataModule):
             download=False,
             transform=torchvision.transforms.Compose(test_transforms),
         )
+
+        # verify num_classes and num_channels
         if (num_classes := len(self.test_set.classes)) != self.num_classes:
             raise ValueError(
                 f"{type(self).__name__} should be created with {num_classes=}"
@@ -160,7 +175,7 @@ class ImagesDataModule(LightningDataModule):
         return self.test_set.classes
 
     # added for exploration:
-    def dataset(self, train=True, transforms=None, to_tensor=False, normalize=False):
+    def dataset(self, *, train=True, transforms=None, to_tensor=False, normalize=False):
         if transforms is None:
             transforms = []
         if to_tensor:
@@ -170,7 +185,7 @@ class ImagesDataModule(LightningDataModule):
         transform = torchvision.transforms.Compose(transforms) if transforms else None
         return self.dataset_cls(self.data_dir, train=train, transform=transform)
 
-    # main functions needed
+    # functions needed for LightningDataModule
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_set,
@@ -197,7 +212,7 @@ class ImagesDataModule(LightningDataModule):
 
 
 def calc_mean_and_std(images):
-    # shape = (B H W) or (B H W C)
+    # images.shape = (B H W) or (B H W C)
     if images.max() > 1:
         images = images / 255
     images = images / 1.0

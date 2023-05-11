@@ -8,6 +8,7 @@ from .classifier import NLLClassifier
 class Resnet(NLLClassifier):
     def __init__(
         self,
+        image_size=None,
         num_channels=3,
         num_classes=10,
         *,
@@ -16,8 +17,10 @@ class Resnet(NLLClassifier):
         weight_decay=5e-4,
         max_lr=0.1,
     ):
-        super().__init__(num_channels=num_channels, num_classes=num_classes)
-        self.save_hyperparameters(ignore=["num_classes", "num_channels"])
+        super().__init__(
+            image_size=image_size, num_channels=num_channels, num_classes=num_classes
+        )
+        self.save_hyperparameters(ignore=["image_size", "num_channels", "num_classes"])
         self.optimizer_hparams = {
             "lr": lr,
             "momentum": momentum,
