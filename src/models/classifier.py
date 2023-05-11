@@ -26,7 +26,7 @@ class NLLClassifier(pl.LightningModule):
         return loss
 
     def training_step(self, batch, batch_idx):
-        return self.step(batch, "test")
+        return self.step(batch, "train")
 
     def validation_step(self, batch, batch_idx):
         self.step(batch, "val", evaluate=True)
