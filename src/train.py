@@ -21,7 +21,7 @@ def train(seed, *, use_wandb=True):
     datamodule = datamodules.ImagesDataModule(
         # see torchvision.datasets for options
         "FashionMNIST",
-        num_channels=3,
+        num_channels=1,
         num_classes=10,
         batch_size=256 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
@@ -53,7 +53,6 @@ def train(seed, *, use_wandb=True):
     # set trainer
     trainer = Trainer(
         max_epochs=30,
-        devices=1,
         logger=logger,
         callbacks=[
             callbacks.LearningRateMonitor(logging_interval="step"),
@@ -61,7 +60,6 @@ def train(seed, *, use_wandb=True):
             # callbacks.EarlyStopping("val_loss"),
         ],
         precision="bf16-mixed",
-        fast_dev_run=True,
     )
     trainer.logger.log_hyperparams({"seed": seed})
     trainer.test(model, datamodule=datamodule, verbose=False)
@@ -70,7 +68,7 @@ def train(seed, *, use_wandb=True):
 
 
 def main():
-    train(seed=7)
+    train(seed=None)
 
 
 if __name__ == "__main__":
