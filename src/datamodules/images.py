@@ -1,22 +1,13 @@
+import tempfile
+from pathlib import Path
+
 import torch
 import torch.utils.data
 import torchvision
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.seed import isolate_rng
 
-DATASET_STATS = {
-    "MNIST": dict(
-        # this normalization is taken from
-        # https://pytorch-lightning.readthedocs.io/en/1.6.2/starter/core_guide.html
-        mean=[0.1307],
-        std=[0.3081],
-    ),
-    "CIFAR10": dict(
-        # this normalization is taken from pl-bolts sourcecode
-        mean=[x / 255 for x in [125.3, 123.0, 113.9]],
-        std=[x / 255 for x in [63.0, 62.1, 66.7]],
-    ),
-}
+DATA_DIR = Path(tempfile.gettempdir()) / "images_data"
 
 
 def train_val_split(
@@ -24,49 +15,74 @@ def train_val_split(
     val_length: int,
     train_transform,
     val_transform,
-    dataset_fn,
+    dataset_cls,
     **dataset_kwargs,
 ):
     """load a dataset and split it, using a different transform for train and val"""
     lengths = [train_length, val_length]
-    dataset_train = dataset_fn(**dataset_kwargs, transform=train_transform)
     with isolate_rng():
+        dataset_train = dataset_cls(**dataset_kwargs, transform=train_transform)
         train_split, _ = torch.utils.data.random_split(dataset_train, lengths)
-    dataset_val = dataset_fn(**dataset_kwargs, transform=val_transform)
-    _, val_split = torch.utils.data.random_split(dataset_val, lengths)
+    with isolate_rng():
+        dataset_val = dataset_cls(**dataset_kwargs, transform=val_transform)
+        _, val_split = torch.utils.data.random_split(dataset_val, lengths)
+    # repeat to consume the random state
+    dataset = dataset_cls(**dataset_kwargs)
+    torch.utils.data.random_split(dataset, lengths)
     return train_split, val_split
 
 
+def parse_name_or_cls(name_or_cls: str | type[object], namespace):
+    if isinstance(name_or_cls, str):
+        name = name_or_cls
+        cls = getattr(namespace, name)
+    else:
+        cls = name_or_cls
+        name = cls.__name__
+    return name, cls
+
+
 class ImagesDataModule(LightningDataModule):
+    """
+    Convert between torchvision.datasets.VisionDataset and LightningDataModule
+    and allow setting different transforms for train / eval
+    """
+
     def __init__(
         self,
-        dataset_name: str,
-        num_classes: int,
+        dataset_name_or_cls: str
+        | type[torchvision.datasets.VisionDataset]
+        | type[torchvision.datasets.MNIST],
         num_channels: int,
+        num_classes: int,
         *,
-        batch_size: int,
-        data_dir: str,
-        extra_transforms: list[torch.nn.Module] | None = None,
+        batch_size: int = 1,
+        data_dir: str | Path = DATA_DIR,
+        train_transforms: list[torch.nn.Module] | None = None,
+        eval_transforms: list[torch.nn.Module] | None = None,
         num_workers: int = 1,
-        val_size: int | float = 0.2,
+        val_size_or_frac: int | float = 0.2,
     ):
         super().__init__()
-        self.dataset_name = dataset_name
-        self.dataset_cls = getattr(
-            torchvision.datasets, dataset_name
-        )  # type: type[torchvision.datasets.VisionDataset] | type[torchvision.datasets.CIFAR10]
-        self.num_classes = num_classes
-        self.num_channels = num_channels
-        self.batch_size = batch_size
-        self.data_dir = data_dir  # TODO: change to .data/NAME
-        self.extra_transforms = extra_transforms or []
-        self.mean = DATASET_STATS.get(dataset_name, {}).get("mean", None)
-        self.std = DATASET_STATS.get(dataset_name, {}).get("std", None)
+        self.dataset_name, self.dataset_cls = parse_name_or_cls(
+            dataset_name_or_cls, torchvision.datasets
+        )
+        if not issubclass(self.dataset_cls, torchvision.datasets.VisionDataset):
+            raise ValueError(  # noqa: TRY004
+                f"{self.dataset_cls} is not a subclass of torchvision.datasets.VisionDataset"
+            )
+        self.num_channels = int(num_channels)
+        self.num_classes = int(num_classes)
+        self.batch_size = int(batch_size)
+        self.data_dir = Path(data_dir).as_posix()
+        self.train_transforms = train_transforms or []
+        self.eval_transforms = eval_transforms or []
         self.num_workers = num_workers
-        self._val_size = val_size
+        self.val_size_or_frac = val_size_or_frac
 
         # defined in self.setup()
         self.train_val_size = None
+        self.normalize_transform = None
         self.train_set = None
         self.val_set = None
         self.test_set = None
@@ -82,9 +98,9 @@ class ImagesDataModule(LightningDataModule):
         if self.train_val_size is None:
             raise RuntimeError("val_size is undefined before setup")
         return (
-            self._val_size
-            if self._val_size >= 1
-            else int(self._val_size * self.train_val_size)
+            int(self.val_size_or_frac)
+            if self.val_size_or_frac >= 1
+            else int(self.val_size_or_frac * self.train_val_size)
         )
 
     @property
@@ -102,35 +118,28 @@ class ImagesDataModule(LightningDataModule):
         train_val_dataset = self.dataset_cls(self.data_dir, train=True)
         self.train_val_size = len(train_val_dataset)
 
-        all_images = train_val_dataset.data
-        if isinstance(all_images, torch.ByteTensor):
-            all_images = all_images / 255
-        all_images = all_images.float()
-        if all_images.ndim == 3:
-            all_images = all_images[:, :, :, None]
-        elif all_images.ndim == 4:
-            pass
-        else:
-            raise ValueError("ndim not in [3,4]")
-        mean = all_images.mean((0, 1, 2)).tolist()
-        std = all_images.std((0, 1, 2)).tolist()
+        # normalize
+        mean, std = calc_mean_and_std(train_val_dataset.data)
+        self.normalize_transform = torchvision.transforms.Normalize(mean, std)
 
-        if self.mean is None:
-            self.mean = mean
-        torch.testing.assert_close(self.mean, mean, rtol=1e-3, atol=1e-3)
-        if self.std is None:
-            self.std = std
-        torch.testing.assert_close(self.std, std, rtol=1e-3, atol=1e-3)
-
-        normalize_transform = torchvision.transforms.Normalize(self.mean, self.std)
+        # set transforms
         train_transforms = [
-            *self.extra_transforms,
+            *self.train_transforms,
             torchvision.transforms.ToTensor(),
-            normalize_transform,
+            self.normalize_transform,
         ]
-        test_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
-        val_transforms = [torchvision.transforms.ToTensor(), normalize_transform]
+        val_transforms = [
+            *self.eval_transforms,
+            torchvision.transforms.ToTensor(),
+            self.normalize_transform,
+        ]
+        test_transforms = [
+            *self.eval_transforms,
+            torchvision.transforms.ToTensor(),
+            self.normalize_transform,
+        ]
 
+        # create dataset
         self.train_set, self.val_set = train_val_split(
             self.train_size,
             self.val_size,
@@ -147,24 +156,36 @@ class ImagesDataModule(LightningDataModule):
             download=False,
             transform=torchvision.transforms.Compose(test_transforms),
         )
-        assert len(self.test_set.classes) == self.num_classes
-        assert self.test_set[0][0].shape[0] == self.num_channels
+
+        # verify num_classes and num_channels
+        if (num_classes := len(self.test_set.classes)) != self.num_classes:
+            raise ValueError(
+                f"{type(self).__name__} should be created with {num_classes=}"
+            )
+        if (num_channels := self.test_set[0][0].shape[0]) != self.num_channels:
+            raise ValueError(
+                f"{type(self).__name__} should be created with {num_channels=}"
+            )
 
     # added for exploration:
     @property
     def classes(self):
+        if self.test_set is None:
+            raise RuntimeError("classes is undefined before setup()")
         return self.test_set.classes
 
-    @property
-    def images_set(self):
-        return self.dataset_cls(self.data_dir, train=True, transform=None)
+    # added for exploration:
+    def dataset(self, *, train=True, transforms=None, to_tensor=False, normalize=False):
+        if transforms is None:
+            transforms = []
+        if to_tensor:
+            transforms.append(torchvision.transforms.ToTensor())
+        if normalize:
+            transforms.append(self.normalize_transform)
+        transform = torchvision.transforms.Compose(transforms) if transforms else None
+        return self.dataset_cls(self.data_dir, train=train, transform=transform)
 
-    @property
-    def tensors_set(self):
-        return self.dataset_cls(
-            self.data_dir, train=True, transform=torchvision.transforms.ToTensor()
-        )
-
+    # functions needed for LightningDataModule
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_set,
@@ -188,3 +209,17 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
+
+
+def calc_mean_and_std(images):
+    # images.shape = (B H W) or (B H W C)
+    if images.max() > 1:
+        images = images / 255
+    images = images / 1.0
+    if images.ndim == 3:
+        images = images[:, :, :, None]
+    if images.ndim != 4:
+        raise ValueError("ndim not in [3, 4]")
+    mean = images.mean((0, 1, 2)).tolist()
+    std = images.std((0, 1, 2)).tolist()
+    return mean, std
