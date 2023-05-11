@@ -8,19 +8,6 @@ from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.seed import isolate_rng
 
 DATA_DIR = Path(tempfile.gettempdir()) / "images_data"
-DATASET_STATS = {
-    "MNIST": dict(
-        # this normalization is taken from
-        # https://pytorch-lightning.readthedocs.io/en/1.6.2/starter/core_guide.html
-        mean=[0.1307],
-        std=[0.3081],
-    ),
-    "CIFAR10": dict(
-        # this normalization is taken from pl-bolts sourcecode
-        mean=[x / 255 for x in [125.3, 123.0, 113.9]],
-        std=[x / 255 for x in [63.0, 62.1, 66.7]],
-    ),
-}
 
 
 def train_val_split(
@@ -45,7 +32,7 @@ class ImagesDataModule(LightningDataModule):
     def __init__(
         self,
         dataset_name: str | None = None,
-        dataset_cls: torchvision.datasets.VisionDataset | None = None,
+        dataset_cls: type[torchvision.datasets.VisionDataset] | None = None,
         num_channels: int = None,
         num_classes: int = None,
         *,
@@ -111,16 +98,9 @@ class ImagesDataModule(LightningDataModule):
 
         # normalize
         mean, std = calc_mean_and_std(train_val_dataset.data)
-
-        # verify
-        saved_mean = DATASET_STATS.get(self.dataset_name, {}).get("mean", None)
-        saved_std = DATASET_STATS.get(self.dataset_name, {}).get("std", None)
-        if saved_mean is not None:
-            torch.testing.assert_close(saved_mean, mean, rtol=1e-3, atol=1e-3)
-        if saved_std is not None:
-            torch.testing.assert_close(saved_std, std, rtol=1e-3, atol=1e-3)
-
         normalize_transform = torchvision.transforms.Normalize(mean, std)
+
+        # set transforms
         train_transforms = [
             *self.train_transforms,
             torchvision.transforms.ToTensor(),

@@ -10,6 +10,8 @@ import wandb
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
 
+LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
+
 
 def train(seed, *, use_wandb=True):
     # set seed
@@ -18,7 +20,7 @@ def train(seed, *, use_wandb=True):
     # set data
     datamodule = datamodules.ImagesDataModule(
         # see torchvision.datasets for options
-        "CIFAR10",
+        "FashionMNIST",
         num_channels=3,
         num_classes=10,
         batch_size=256 if torch.cuda.is_available() else 64,
@@ -31,8 +33,7 @@ def train(seed, *, use_wandb=True):
     )
 
     # set model
-    model = models.MultiLayerPerceptron(
-        lr=0.05,
+    model = models.Resnet(
         num_channels=datamodule.num_channels,
         num_classes=datamodule.num_classes,
     )
@@ -41,7 +42,7 @@ def train(seed, *, use_wandb=True):
     # set logger(s)
     project_name = f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
     logger = []
-    save_dir = Path(tempfile.gettempdir()) / "logs" / project_name
+    save_dir = LOGS_DIR / project_name
     save_dir.mkdir(exist_ok=True, parents=True)
     if use_wandb:
         if wandb.run is not None:
