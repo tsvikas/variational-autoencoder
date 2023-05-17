@@ -40,16 +40,6 @@ class NLLClassifier(pl.LightningModule):
         self.step(batch, "test", evaluate=True)
 
 
-def parse_name_or_cls(name_or_cls, namespace):
-    if isinstance(name_or_cls, str):
-        name = name_or_cls
-        cls = getattr(namespace, name)
-    else:
-        cls = name_or_cls
-        name = cls.__name__
-    return name, cls
-
-
 class NLLClassifierWithOptimizer(NLLClassifier):
     def create_optimizers(
         self,
