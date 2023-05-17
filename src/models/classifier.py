@@ -12,7 +12,6 @@ class NLLClassifier(pl.LightningModule):
         num_classes,
     ):
         super().__init__()
-
         sample_batch_size = 32
         self.image_size = image_size or 96
         self.num_channels = num_channels
@@ -93,9 +92,11 @@ class NLLClassifierWithOptimizer(NLLClassifier):
             )
 
     def configure_optimizers(self):
+        # optimizer
         optimizer = self.optimizer_cls(self.parameters(), **self.optimizer_hparams)
         if not self.use_scheduler:
             return {"optimizer": optimizer}
+        # scheduler
         scheduler_hparams = self.scheduler_hparams
         if self.add_total_steps:
             scheduler_hparams["total_steps"] = self.trainer.estimated_stepping_batches
