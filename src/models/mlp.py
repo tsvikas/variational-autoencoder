@@ -4,7 +4,7 @@ import torch.nn.functional as F  # noqa: N812
 import torch.optim
 from torch import nn
 
-from .classifier import ImageClassifier
+from .modules import ImageClassifier
 
 
 class MultiLayerPerceptron(ImageClassifier):

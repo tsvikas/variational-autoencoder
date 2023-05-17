@@ -3,7 +3,7 @@ import torch.optim
 import torchvision
 from torch import nn
 
-from .classifier import ImageClassifier
+from .modules import ImageClassifier
 
 
 class Resnet(ImageClassifier):
