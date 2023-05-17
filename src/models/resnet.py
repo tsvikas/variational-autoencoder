@@ -3,10 +3,10 @@ import torch.optim
 import torchvision
 from torch import nn
 
-from .classifier import NLLClassifierWithOptimizer
+from .classifier import ImageClassifier
 
 
-class Resnet(NLLClassifierWithOptimizer):
+class Resnet(ImageClassifier):
     def __init__(
         self,
         image_size=None,

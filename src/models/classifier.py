@@ -4,43 +4,8 @@ import torch.nn.functional as F  # noqa: N812
 from torchmetrics.functional.classification import multiclass_accuracy
 
 
-class NLLClassifier(pl.LightningModule):
-    def __init__(
-        self,
-        image_size,
-        num_channels,
-        num_classes,
-    ):
-        super().__init__()
-        sample_batch_size = 32
-        self.image_size = image_size or 96
-        self.num_channels = num_channels
-        self.num_classes = num_classes
-        self.example_input_array = torch.empty(
-            sample_batch_size, num_channels, self.image_size, self.image_size
-        )
-
-    def step(self, batch, stage, *, evaluate=False):
-        x, target = batch
-        nll = self(x)
-        loss = F.nll_loss(nll, target)
-        self.log(f"{stage}_loss", loss, prog_bar=evaluate)
-        if evaluate:
-            acc = multiclass_accuracy(nll, target, num_classes=self.num_classes)
-            self.log(f"{stage}_acc", acc, prog_bar=True)
-        return loss
-
-    def training_step(self, batch, batch_idx):
-        return self.step(batch, "train")
-
-    def validation_step(self, batch, batch_idx):
-        self.step(batch, "val", evaluate=True)
-
-    def test_step(self, batch, batch_idx):
-        self.step(batch, "test", evaluate=True)
-
-
-class NLLClassifierWithOptimizer(NLLClassifier):
+# TODO: multi inheritance?
+class LightningModuleWithOptimizer(pl.LightningModule):
     def create_optimizers(
         self,
         optimizer_cls,
@@ -78,3 +43,39 @@ class NLLClassifierWithOptimizer(NLLClassifier):
         )
 
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
+
+
+class ImageClassifier(LightningModuleWithOptimizer):
+    def __init__(
+        self,
+        image_size,
+        num_channels,
+        num_classes,
+    ):
+        super().__init__()
+        sample_batch_size = 32
+        self.image_size = image_size or 96
+        self.num_channels = num_channels
+        self.num_classes = num_classes
+        self.example_input_array = torch.empty(
+            sample_batch_size, num_channels, self.image_size, self.image_size
+        )
+
+    def step(self, batch, stage, *, evaluate=False):
+        x, target = batch
+        nll = self(x)
+        loss = F.nll_loss(nll, target)
+        self.log(f"{stage}_loss", loss, prog_bar=evaluate)
+        if evaluate:
+            acc = multiclass_accuracy(nll, target, num_classes=self.num_classes)
+            self.log(f"{stage}_acc", acc, prog_bar=True)
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self.step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        self.step(batch, "val", evaluate=True)
+
+    def test_step(self, batch, batch_idx):
+        self.step(batch, "test", evaluate=True)

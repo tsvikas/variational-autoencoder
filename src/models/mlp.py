@@ -4,10 +4,10 @@ import torch.nn.functional as F  # noqa: N812
 import torch.optim
 from torch import nn
 
-from .classifier import NLLClassifierWithOptimizer
+from .classifier import ImageClassifier
 
 
-class MultiLayerPerceptron(NLLClassifierWithOptimizer):
+class MultiLayerPerceptron(ImageClassifier):
     def __init__(
         self,
         image_size=28,
