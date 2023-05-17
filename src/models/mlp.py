@@ -1,6 +1,7 @@
 # https://github.com/rubentea16/pl-mnist/blob/master/model.py
 # https://docs.ray.io/en/latest/tune/examples/includes/mnist_ptl_mini.html
 import torch.nn.functional as F  # noqa: N812
+import torch.optim
 from torch import nn
 
 from .classifier import NLLClassifierWithOptimizer
@@ -15,25 +16,12 @@ class MultiLayerPerceptron(NLLClassifierWithOptimizer):
         *,
         hidden_size_1=128,
         hidden_size_2=256,
-        lr=0.05,
-        gamma=0.95
     ):
-        model_hparams = {"hidden_size_1": hidden_size_1, "hidden_size_2": hidden_size_2}
-        optimizer_hparams = {"lr": lr}
-        scheduler_hparams = {"gamma": gamma}
-        self.save_hyperparameters(model_hparams)
         super().__init__(
-            image_size=image_size,
-            num_channels=num_channels,
-            num_classes=num_classes,
-            optimizer_name_or_cls="Adam",
-            optimizer_hparams=optimizer_hparams,
-            scheduler_name_or_cls="ExponentialLR",
-            scheduler_hparams=scheduler_hparams,
-            scheduler_interval="epoch",
-            add_total_steps=False,
+            image_size=image_size, num_channels=num_channels, num_classes=num_classes
         )
         # create the model
+        self.save_hyperparameters("hidden_size_1", "hidden_size_2")
         self.layer_1 = nn.Linear(num_channels * image_size * image_size, hidden_size_1)
         self.layer_2 = nn.Linear(hidden_size_1, hidden_size_2)
         self.layer_3 = nn.Linear(hidden_size_2, num_classes)
@@ -56,3 +44,13 @@ class MultiLayerPerceptron(NLLClassifierWithOptimizer):
         x = F.log_softmax(x, dim=1)
         assert x.shape == (batch_size, self.num_classes)
         return x
+
+    def configure_optimizers(self):
+        return self.create_optimizers(
+            optimizer_cls=torch.optim.Adam,
+            optimizer_hparams={"lr": 0.05},
+            scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+            scheduler_interval="epoch",
+            scheduler_hparams={"gamma": 0.95},
+            add_total_steps=False,
+        )
