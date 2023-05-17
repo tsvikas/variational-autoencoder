@@ -194,10 +194,12 @@ class ImagesDataModule(LightningDataModule):
             num_workers=self.num_workers,
         )
 
+    # we can use a x2 batch_size in validation and testing,
+    # because we don't have gradients
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_set,
-            batch_size=self.batch_size,
+            batch_size=self.batch_size * 2,
             shuffle=False,
             num_workers=self.num_workers,
         )
@@ -205,7 +207,7 @@ class ImagesDataModule(LightningDataModule):
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_set,
-            batch_size=self.batch_size,
+            batch_size=self.batch_size * 2,
             shuffle=False,
             num_workers=self.num_workers,
         )
