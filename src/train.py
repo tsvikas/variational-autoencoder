@@ -33,7 +33,7 @@ def train(seed, *, use_wandb=True):
     )
 
     # set model
-    model = models.Resnet(
+    model = models.MultiLayerPerceptron(
         num_channels=datamodule.num_channels,
         num_classes=datamodule.num_classes,
     )

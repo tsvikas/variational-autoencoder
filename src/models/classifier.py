@@ -51,57 +51,40 @@ def parse_name_or_cls(name_or_cls, namespace):
 
 
 class NLLClassifierWithOptimizer(NLLClassifier):
-    def __init__(
+    def create_optimizers(
         self,
-        image_size,
-        num_channels,
-        num_classes,
-        optimizer_name_or_cls,
+        optimizer_cls,
         optimizer_hparams=None,
-        scheduler_name_or_cls=None,
-        scheduler_hparams=None,
+        scheduler_cls=None,
         scheduler_interval="epoch",
+        scheduler_hparams=None,
         add_total_steps=False,
     ):
-        super().__init__(
-            image_size=image_size, num_channels=num_channels, num_classes=num_classes
-        )
         # optimizer
-        self.optimizer_name, self.optimizer_cls = parse_name_or_cls(
-            optimizer_name_or_cls, torch.optim
+        optimizer_hparams = optimizer_hparams or {}
+        optimizer = optimizer_cls(self.parameters(), **optimizer_hparams)
+        self.logger.log_hyperparams(
+            {"optimizer": optimizer_cls.__name__, **optimizer_hparams}
         )
-        self.optimizer_hparams = optimizer_hparams or {}
-        self.save_hyperparameters(
-            {"optimizer": self.optimizer_name, **optimizer_hparams}
-        )
-        # scheduler
-        self.use_scheduler = scheduler_name_or_cls is not None
-        if self.use_scheduler:
-            self.scheduler_name, self.scheduler_cls = parse_name_or_cls(
-                scheduler_name_or_cls, torch.optim.lr_scheduler
-            )
-            self.scheduler_hparams = scheduler_hparams or {}
-            self.scheduler_interval = scheduler_interval
-            self.add_total_steps = add_total_steps
-            self.save_hyperparameters(
-                {
-                    "scheduler": self.scheduler_name,
-                    "scheduler_interval": scheduler_interval,
-                    **scheduler_hparams,
-                }
-            )
-
-    def configure_optimizers(self):
-        # optimizer
-        optimizer = self.optimizer_cls(self.parameters(), **self.optimizer_hparams)
-        if not self.use_scheduler:
+        if not scheduler_cls:
             return {"optimizer": optimizer}
+
         # scheduler
-        scheduler_hparams = self.scheduler_hparams
-        if self.add_total_steps:
+        if scheduler_interval not in ["epoch", "step"]:
+            raise ValueError("scheduler_interval not in ['epoch', 'step']")
+        scheduler_hparams = scheduler_hparams or {}
+        if add_total_steps:
             scheduler_hparams["total_steps"] = self.trainer.estimated_stepping_batches
         lr_scheduler = {
-            "scheduler": self.scheduler_cls(optimizer, **scheduler_hparams),
-            "interval": self.scheduler_interval,
+            "scheduler": scheduler_cls(optimizer, **scheduler_hparams),
+            "interval": scheduler_interval,
         }
+        self.logger.log_hyperparams(
+            {
+                "scheduler": scheduler_cls.__name__,
+                "scheduler_interval": scheduler_interval,
+                **scheduler_hparams,
+            }
+        )
+
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
