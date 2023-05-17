@@ -1,11 +1,11 @@
 import torch.nn.functional as F  # noqa: N812
 import torchvision
-from torch import nn, optim
+from torch import nn
 
-from .classifier import NLLClassifier
+from .classifier import NLLClassifierWithOptimizer
 
 
-class Resnet(NLLClassifier):
+class Resnet(NLLClassifierWithOptimizer):
     def __init__(
         self,
         image_size=None,
@@ -17,16 +17,23 @@ class Resnet(NLLClassifier):
         weight_decay=5e-4,
         max_lr=0.1,
     ):
-        super().__init__(
-            image_size=image_size, num_channels=num_channels, num_classes=num_classes
-        )
-        self.save_hyperparameters(ignore=["image_size", "num_channels", "num_classes"])
-        self.optimizer_hparams = {
+        optimizer_hparams = {
             "lr": lr,
             "momentum": momentum,
             "weight_decay": weight_decay,
         }
-        self.scheduler_hparams = {"max_lr": max_lr}
+        scheduler_hparams = {"max_lr": max_lr}
+        super().__init__(
+            image_size=image_size,
+            num_channels=num_channels,
+            num_classes=num_classes,
+            optimizer_name_or_cls="SGD",
+            optimizer_hparams=optimizer_hparams,
+            scheduler_name_or_cls="OneCycleLR",
+            scheduler_hparams=scheduler_hparams,
+            scheduler_interval="step",
+            add_total_steps=True,
+        )
         # create the model
         self.model = torchvision.models.resnet18(num_classes=num_classes)
         self.model.conv1 = nn.Conv2d(
@@ -41,19 +48,3 @@ class Resnet(NLLClassifier):
         x = F.log_softmax(x, dim=1)
         assert x.shape == (batch_size, self.num_classes)
         return x
-
-    def configure_optimizers(self):
-        optimizer = optim.SGD(self.parameters(), **self.optimizer_hparams)
-        lr_scheduler = {
-            "scheduler": optim.lr_scheduler.OneCycleLR(
-                optimizer,
-                total_steps=self.trainer.estimated_stepping_batches,
-                **self.scheduler_hparams,
-            ),
-            "interval": "step",
-        }
-        # self.save_hyperparameters({"optimizer": type(optimizer).__name__})
-        # self.save_hyperparameters(
-        #     {"scheduler": type(lr_scheduler["scheduler"]).__name__}
-        # )
-        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
