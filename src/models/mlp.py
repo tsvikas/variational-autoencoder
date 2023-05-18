@@ -20,8 +20,8 @@ class MultiLayerPerceptron(ImageClassifier):
         super().__init__(
             image_size=image_size, num_channels=num_channels, num_classes=num_classes
         )
+        self.save_hyperparameters()
         # create the model
-        self.save_hyperparameters("hidden_size_1", "hidden_size_2")
         self.layer_1 = nn.Linear(num_channels * image_size * image_size, hidden_size_1)
         self.layer_2 = nn.Linear(hidden_size_1, hidden_size_2)
         self.layer_3 = nn.Linear(hidden_size_2, num_classes)
