@@ -11,6 +11,7 @@ class Resnet(ImageClassifier):
         super().__init__(
             image_size=image_size, num_channels=num_channels, num_classes=num_classes
         )
+        self.save_hyperparameters()
         # create the model
         self.model = torchvision.models.resnet18(num_classes=num_classes)
         self.model.conv1 = nn.Conv2d(

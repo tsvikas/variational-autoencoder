@@ -16,6 +16,7 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
         hidden_sizes=(64, 4),
     ):
         super().__init__(image_size=image_size, num_channels=num_channels)
+        self.save_hyperparameters()
 
         # create the model
         self.save_hyperparameters("hidden_sizes")
