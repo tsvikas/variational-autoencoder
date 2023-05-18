@@ -1,3 +1,5 @@
+import itertools
+
 import torch.optim
 from torch import nn
 
@@ -10,29 +12,25 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
         image_size=28,
         num_channels=3,
         *,
-        hidden_size_1=256,
-        hidden_size_2=64,
-        hidden_size_3=16,
+        hidden_sizes=(256, 64, 16),
     ):
         super().__init__(image_size=image_size, num_channels=num_channels)
         # create the model
-        self.save_hyperparameters("hidden_size_1", "hidden_size_2", "hidden_size_3")
+        self.save_hyperparameters("hidden_sizes")
         input_size = num_channels * image_size * image_size
-        self.encoder = nn.Sequential(
-            nn.Linear(input_size, hidden_size_1),
-            nn.ReLU(),
-            nn.Linear(hidden_size_1, hidden_size_2),
-            nn.ReLU(),
-            nn.Linear(hidden_size_2, hidden_size_3),
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(hidden_size_3, hidden_size_2),
-            nn.ReLU(),
-            nn.Linear(hidden_size_2, hidden_size_1),
-            nn.ReLU(),
-            nn.Linear(hidden_size_1, input_size),
-            nn.Tanh(),
-        )
+        layer_sizes = [input_size, *hidden_sizes]
+
+        encoder_layers = []
+        for size_in, size_out in itertools.pairwise(layer_sizes):
+            encoder_layers.append(nn.Linear(size_in, size_out))
+            encoder_layers.append(nn.ReLU())
+        self.encoder = nn.Sequential(*encoder_layers[:-1])
+
+        decoder_layers = []
+        for size_in, size_out in itertools.pairwise(layer_sizes[::-1]):
+            decoder_layers.append(nn.Linear(size_in, size_out))
+            decoder_layers.append(nn.ReLU())
+        self.decoder = nn.Sequential(*decoder_layers[:-1], nn.Tanh())
 
     def forward(self, x):
         batch_size, channels, height, width = x.shape
