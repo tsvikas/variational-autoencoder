@@ -6,3 +6,4 @@ poetry env use python3.11
 poetry install
 poetry run wandb login "$(cat wandb_api_key.secret)"
 echo PYTHON_BIN = "$(poetry env info -p)"/bin/python
+echo CMD = poetry run src/train.py
