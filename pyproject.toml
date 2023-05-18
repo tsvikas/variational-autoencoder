@@ -13,6 +13,7 @@ torchvision = "^0.15.1"
 pytorch-lightning = "^2.0.2"
 wandb = "^0.15.2"
 rich = "^13.3.5"
+einops = "^0.6.1"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.1"
