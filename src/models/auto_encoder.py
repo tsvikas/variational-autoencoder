@@ -4,7 +4,7 @@ from torch import nn
 from .modules import ImageAutoEncoder
 
 
-class MultiLayerPerceptron(ImageAutoEncoder):
+class FullyConnectedAutoEncoder(ImageAutoEncoder):
     def __init__(
         self,
         image_size=28,
