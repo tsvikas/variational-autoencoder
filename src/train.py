@@ -56,7 +56,7 @@ def train(seed, *, use_wandb=True):
         callbacks=[
             callbacks.LearningRateMonitor(logging_interval="step"),
             # callbacks.progress.TQDMProgressBar(refresh_rate=10),
-            # callbacks.EarlyStopping("val_loss"),
+            # callbacks.EarlyStopping("loss/validation"),
         ],
         precision="bf16-mixed",
     )

@@ -76,10 +76,10 @@ class NLLClassifier(SimpleLightningModule):
         x, target = batch
         nll = self(x)
         loss = F.nll_loss(nll, target)
-        self.log(f"{stage}_loss", loss, prog_bar=evaluate)
+        self.log(f"loss/{stage}", loss, prog_bar=evaluate)
         if evaluate:
             acc = multiclass_accuracy(nll, target, num_classes=self.num_classes)
-            self.log(f"{stage}_acc", acc, prog_bar=True)
+            self.log(f"accuracy/{stage}", acc, prog_bar=True)
         return loss
 
 
@@ -104,7 +104,7 @@ class AutoEncoder(SimpleLightningModule):
         x, target = batch
         x2 = self(x)
         loss = F.mse_loss(x2, x)
-        self.log(f"{stage}_loss", loss, prog_bar=evaluate)
+        self.log(f"loss/{stage}", loss, prog_bar=evaluate)
         return loss
 
 
