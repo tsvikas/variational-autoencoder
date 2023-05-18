@@ -8,13 +8,7 @@ from .modules import ImageAutoEncoder
 
 
 class FullyConnectedAutoEncoder(ImageAutoEncoder):
-    def __init__(
-        self,
-        image_size=28,
-        num_channels=3,
-        *,
-        hidden_sizes=(64, 4),
-    ):
+    def __init__(self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4)):
         super().__init__(image_size=image_size, num_channels=num_channels)
         self.save_hyperparameters()
 
