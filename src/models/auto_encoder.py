@@ -13,7 +13,7 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
         image_size=28,
         num_channels=3,
         *,
-        hidden_sizes=(256, 64, 16),
+        hidden_sizes=(64, 4),
     ):
         super().__init__(image_size=image_size, num_channels=num_channels)
 
@@ -32,7 +32,7 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
             h=self.image_size,
             w=self.image_size,
         )
-        self.encoder = nn.Sequential(encoder_rearrange, *encoder_layers[:-1])
+        self.encoder = nn.Sequential(encoder_rearrange, *encoder_layers[:-1], nn.Tanh())
 
         decoder_layers = []
         for size_in, size_out in itertools.pairwise(layer_sizes[::-1]):
