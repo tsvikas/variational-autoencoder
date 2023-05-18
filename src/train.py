@@ -54,6 +54,8 @@ def train(seed, *, use_wandb=True):
         max_epochs=30,
         logger=logger,
         callbacks=[
+            callbacks.RichModelSummary(max_depth=2),
+            callbacks.RichProgressBar(),
             callbacks.LearningRateMonitor(logging_interval="step"),
             # callbacks.progress.TQDMProgressBar(refresh_rate=10),
             # callbacks.EarlyStopping("loss/validation"),
