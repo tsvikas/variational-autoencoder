@@ -5,7 +5,7 @@ from torchmetrics.functional.classification import multiclass_accuracy
 
 
 class SimpleLightningModule(pl.LightningModule):
-    def step(self, batch, stage, *, evaluate=False):
+    def step(self, batch, batch_idx, stage, *, evaluate=False):
         """
         run a general training/validation/test step.
         return the loss
@@ -14,13 +14,13 @@ class SimpleLightningModule(pl.LightningModule):
         raise NotImplementedError
 
     def training_step(self, batch, batch_idx):
-        return self.step(batch, "training")
+        return self.step(batch, batch_idx, "training")
 
     def validation_step(self, batch, batch_idx):
-        self.step(batch, "validation", evaluate=True)
+        self.step(batch, batch_idx, "validation", evaluate=True)
 
     def test_step(self, batch, batch_idx):
-        self.step(batch, "test", evaluate=True)
+        self.step(batch, batch_idx, "test", evaluate=True)
 
     def create_optimizers(
         self,
@@ -72,7 +72,7 @@ class NLLClassifier(SimpleLightningModule):
         super().__init__()
         self.num_classes = num_classes
 
-    def step(self, batch, stage, *, evaluate=False):
+    def step(self, batch, batch_idx, stage, *, evaluate=False):
         x, target = batch
         nll = self(x)
         loss = F.nll_loss(nll, target)
@@ -100,11 +100,18 @@ class AutoEncoder(SimpleLightningModule):
     uses mse_loss
     """
 
-    def step(self, batch, stage, *, evaluate=False):
+    n_images_to_save = 4
+
+    def step(self, batch, batch_idx, stage, *, evaluate=False):
         x, target = batch
         x2 = self(x)
         loss = F.mse_loss(x2, x)
         self.log(f"loss/{stage}", loss, prog_bar=evaluate)
+        if stage == "validation":
+            if self.global_step == 0 and batch_idx == 0:
+                self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
+            if batch_idx == 0:
+                self.logger.log_image("image/pred", list(x2[: self.n_images_to_save]))
         return loss
 
 
