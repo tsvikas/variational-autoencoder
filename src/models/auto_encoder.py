@@ -48,10 +48,10 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
 
     def configure_optimizers(self):
         return self.create_optimizers(
-            optimizer_cls=torch.optim.Adam,
-            optimizer_hparams={"lr": 0.05},
-            scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-            scheduler_interval="epoch",
-            scheduler_hparams={"gamma": 0.95},
-            add_total_steps=False,
+            optimizer_cls=torch.optim.SGD,
+            optimizer_hparams={"lr": 0.05, "momentum": 0.9, "weight_decay": 5e-4},
+            scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
+            scheduler_hparams={"max_lr": 0.1},
+            scheduler_interval="step",
+            add_total_steps=True,
         )
