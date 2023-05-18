@@ -7,16 +7,9 @@ from .modules import ImageClassifier
 
 
 class Resnet(ImageClassifier):
-    def __init__(
-        self,
-        image_size=None,
-        num_channels=3,
-        num_classes=10,
-    ):
+    def __init__(self, image_size=None, num_channels=3, num_classes=10):
         super().__init__(
-            image_size=image_size,
-            num_channels=num_channels,
-            num_classes=num_classes,
+            image_size=image_size, num_channels=num_channels, num_classes=num_classes
         )
         # create the model
         self.model = torchvision.models.resnet18(num_classes=num_classes)
@@ -36,11 +29,7 @@ class Resnet(ImageClassifier):
     def configure_optimizers(self):
         return self.create_optimizers(
             optimizer_cls=torch.optim.SGD,
-            optimizer_hparams={
-                "lr": 0.05,
-                "momentum": 0.9,
-                "weight_decay": 5e-4,
-            },
+            optimizer_hparams={"lr": 0.05, "momentum": 0.9, "weight_decay": 5e-4},
             scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
             scheduler_hparams={"max_lr": 0.1},
             scheduler_interval="step",
