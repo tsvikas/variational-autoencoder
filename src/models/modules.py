@@ -5,6 +5,16 @@ from torchmetrics.functional.classification import multiclass_accuracy
 
 
 class SimpleLightningModule(pl.LightningModule):
+    @classmethod
+    def load_latest_checkpoint(cls, base_dir, **kwargs):
+        all_checkpoints = sorted(
+            base_dir.glob("**/*.ckpt"), key=lambda p: p.stat().st_mtime
+        )
+        if not all_checkpoints:
+            raise RuntimeError("no checkpoints found")
+        ckpt_fn_latest = all_checkpoints[-1]
+        return cls.load_from_checkpoint(ckpt_fn_latest, **kwargs)
+
     def step(self, batch, batch_idx, stage, *, evaluate=False):
         """
         run a general training/validation/test step.
