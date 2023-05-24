@@ -1,15 +1,16 @@
 import itertools
 
-import torch.optim
 from einops.layers.torch import Rearrange
 from torch import nn
 
-from .modules import ImageAutoEncoder
+from . import base
 
 
-class FullyConnectedAutoEncoder(ImageAutoEncoder):
-    def __init__(self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4)):
-        super().__init__(image_size=image_size, num_channels=num_channels)
+class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
+    def __init__(
+        self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4), **kwargs
+    ):
+        super().__init__(image_size=image_size, num_channels=num_channels, **kwargs)
         self.save_hyperparameters()
 
         # create the model
@@ -46,12 +47,8 @@ class FullyConnectedAutoEncoder(ImageAutoEncoder):
         x = self.decoder(x)
         return x
 
-    def configure_optimizers(self):
-        return self.create_optimizers(
-            optimizer_cls=torch.optim.SGD,
-            optimizer_hparams={"lr": 0.05, "momentum": 0.9, "weight_decay": 5e-4},
-            scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
-            scheduler_hparams={"max_lr": 0.1},
-            scheduler_interval="step",
-            add_total_steps=True,
-        )
+
+class FullyConnectedAutoEncoderSGD(
+    base.schedulers.OneCycleLR, base.optimizers.SGD, FullyConnectedAutoEncoder
+):
+    pass

@@ -3,6 +3,8 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torchmetrics.functional.classification import multiclass_accuracy
 
+from . import optimizers, schedulers
+
 
 class SimpleLightningModule(pl.LightningModule):
     @classmethod
@@ -32,54 +34,71 @@ class SimpleLightningModule(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         self.step(batch, batch_idx, "test", evaluate=True)
 
-    def create_optimizers(
-        self,
-        optimizer_cls,
-        optimizer_hparams=None,
-        scheduler_cls=None,
-        scheduler_interval="epoch",
-        scheduler_hparams=None,
-        add_total_steps=False,
-    ):
-        # optimizer
-        optimizer_hparams = optimizer_hparams or {}
-        optimizer = optimizer_cls(self.parameters(), **optimizer_hparams)
-        self.logger.log_hyperparams(
-            {"optimizer": optimizer_cls.__name__, **optimizer_hparams}
-        )
-        if not scheduler_cls:
-            return {"optimizer": optimizer}
 
-        # scheduler
+class LightningModuleWithOptimizer(SimpleLightningModule):
+    optimizer_cls = None
+    optimizer_argnames = []
+
+    def __init__(self, **kwargs):
+        self.optimizer_kwargs = {
+            k: kwargs.pop(k) for k in self.optimizer_argnames if k in kwargs
+        }
+        super().__init__(**kwargs)
+
+    def configure_optimizers(self):
+        if self.optimizer_cls is None:
+            raise ValueError("must define an optimizer_cls")
+        optimizer = self.optimizer_cls(self.parameters(), **self.optimizer_kwargs)
+        self.logger.log_hyperparams({"optimizer": self.optimizer_cls.__name__})
+        return optimizer
+
+
+class LightningModuleWithScheduler(LightningModuleWithOptimizer):
+    scheduler_cls = None
+    scheduler_argnames = []
+    scheduler_interval = "epoch"
+    scheduler_add_total_steps = False
+
+    def __init__(self, **kwargs):
+        self.scheduler_kwargs = {
+            k: kwargs.pop(k) for k in self.scheduler_argnames if k in kwargs
+        }
+        super().__init__(**kwargs)
+
+    def configure_optimizers(self):
+        optimizer = super().configure_optimizers()
+
         scheduler_interval_options = ["epoch", "step"]
-        if scheduler_interval not in scheduler_interval_options:
+        if self.scheduler_interval not in scheduler_interval_options:
             raise ValueError(f"scheduler_interval not in {scheduler_interval_options}")
-        scheduler_hparams = scheduler_hparams or {}
-        if add_total_steps:
-            scheduler_hparams["total_steps"] = self.trainer.estimated_stepping_batches
+        created_scheduler_kwargs = {}
+        if self.scheduler_add_total_steps:
+            total_steps = self.trainer.estimated_stepping_batches
+            created_scheduler_kwargs["total_steps"] = total_steps
         lr_scheduler = {
-            "scheduler": scheduler_cls(optimizer, **scheduler_hparams),
-            "interval": scheduler_interval,
+            "scheduler": self.scheduler_cls(
+                optimizer, **self.scheduler_kwargs, **created_scheduler_kwargs
+            ),
+            "interval": self.scheduler_interval,
         }
         self.logger.log_hyperparams(
             {
-                "scheduler": scheduler_cls.__name__,
-                "scheduler_interval": scheduler_interval,
-                **scheduler_hparams,
+                "scheduler": self.scheduler_cls.__name__,
+                "scheduler_interval": self.scheduler_interval,
             }
         )
 
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
 
 
-class NLLClassifier(SimpleLightningModule):
+class NLLClassifier(LightningModuleWithScheduler):
     """
     classifier that returns the negative-log-likelihood of each class.
     uses nll_loss
     """
 
-    def __init__(self, num_classes):
-        super().__init__()
+    def __init__(self, num_classes, **kwargs):
+        super().__init__(**kwargs)
         self.num_classes = num_classes
 
     def step(self, batch, batch_idx, stage, *, evaluate=False):
@@ -94,8 +113,8 @@ class NLLClassifier(SimpleLightningModule):
 
 
 class ImageClassifier(NLLClassifier):
-    def __init__(self, image_size, num_channels, num_classes):
-        super().__init__(num_classes)
+    def __init__(self, image_size, num_channels, num_classes, **kwargs):
+        super().__init__(num_classes, **kwargs)
         sample_batch_size = 32
         self.image_size = image_size or 96
         self.num_channels = num_channels
@@ -104,7 +123,7 @@ class ImageClassifier(NLLClassifier):
         )
 
 
-class AutoEncoder(SimpleLightningModule):
+class AutoEncoder(LightningModuleWithScheduler):
     """
     encoder that tries to return itself.
     uses mse_loss
@@ -126,8 +145,8 @@ class AutoEncoder(SimpleLightningModule):
 
 
 class ImageAutoEncoder(AutoEncoder):
-    def __init__(self, image_size, num_channels):
-        super().__init__()
+    def __init__(self, image_size, num_channels, **kwargs):
+        super().__init__(**kwargs)
         sample_batch_size = 32
         self.image_size = image_size or 96
         self.num_channels = num_channels

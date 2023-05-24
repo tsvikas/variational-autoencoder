@@ -18,7 +18,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import torch
 from ipywidgets import interact
-from models import FullyConnectedAutoEncoder
+from models import FullyConnectedAutoEncoderSGD
 from torchvision.transforms.functional import to_pil_image
 
 # %%
@@ -29,7 +29,7 @@ ckpt_dir = (
 )
 
 # %%
-model = FullyConnectedAutoEncoder.load_latest_checkpoint(ckpt_dir, num_channels=1)
+model = FullyConnectedAutoEncoderSGD.load_latest_checkpoint(ckpt_dir, num_channels=1)
 model.eval()
 print(model.hparams)
 print(model)

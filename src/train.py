@@ -33,7 +33,17 @@ def train(seed, *, use_wandb=True):
     )
 
     # set model
-    model = models.FullyConnectedAutoEncoder(num_channels=datamodule.num_channels)
+    model = models.FullyConnectedAutoEncoderSGD(
+        num_channels=datamodule.num_channels,
+        # SGD
+        lr=0.05,
+        momentum=0.9,
+        weight_decay=5e-4,
+        max_lr=0.1,
+        # # Adam
+        # lr=0.05,
+        # gamma=0.95,
+    )
     torch.set_float32_matmul_precision("medium")
 
     # set logger(s)
