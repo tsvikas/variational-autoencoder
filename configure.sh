@@ -6,8 +6,8 @@ else
   find . -type f -executable -exec chmod -x {} +
 fi
 chmod +x src/train.py ./configure.sh
-sudo apt update
-sudo apt install -y python3.11
+sudo apt update -qq
+sudo apt install -qqy python3.11
 curl -sSL https://install.python-poetry.org | python3 -
 poetry env use python3.11
 poetry install
