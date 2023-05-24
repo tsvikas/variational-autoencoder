@@ -3,3 +3,4 @@ data
 __pycache__
 *.secret
 TODO
+.ipynb_checkpoints/
