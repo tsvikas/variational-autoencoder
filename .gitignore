@@ -4,3 +4,4 @@ __pycache__
 *.secret
 TODO
 .ipynb_checkpoints/
+*.ipynb
