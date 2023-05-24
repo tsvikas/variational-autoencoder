@@ -1,5 +1,6 @@
 # https://github.com/rubentea16/pl-mnist/blob/master/model.py
 # https://docs.ray.io/en/latest/tune/examples/includes/mnist_ptl_mini.html
+import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
@@ -15,13 +16,23 @@ class MultiLayerPerceptron(base.ImageClassifier):
         *,
         hidden_size_1=128,
         hidden_size_2=256,
-        **kwargs
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
     ):
         super().__init__(
             image_size=image_size,
             num_channels=num_channels,
             num_classes=num_classes,
-            **kwargs
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
         )
         self.save_hyperparameters()
         # create the model
@@ -49,7 +60,41 @@ class MultiLayerPerceptron(base.ImageClassifier):
         return x
 
 
-class MultiLayerPerceptronAdam(
-    base.schedulers.ExponentialLR, base.optimizers.Adam, MultiLayerPerceptron
-):
-    pass
+class MultiLayerPerceptronAdam(MultiLayerPerceptron):
+    def __init__(
+        self,
+        image_size=28,
+        num_channels=3,
+        num_classes=10,
+        *,
+        hidden_size_1=128,
+        hidden_size_2=256,
+        **kwargs,
+    ):
+        # optimizer
+        optimizer_cls = torch.optim.Adam
+        optimizer_argnames = ["lr"]
+        # scheduler
+        scheduler_cls = torch.optim.lr_scheduler.ExponentialLR
+        scheduler_argnames = ["gamma"]
+        scheduler_interval = "epoch"
+        scheduler_add_total_steps = False
+
+        optimizer_kwargs = {k: kwargs.pop(k) for k in optimizer_argnames if k in kwargs}
+        scheduler_kwargs = {k: kwargs.pop(k) for k in scheduler_argnames if k in kwargs}
+        if kwargs:
+            raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
+
+        super().__init__(
+            image_size=image_size,
+            num_channels=num_channels,
+            num_classes=num_classes,
+            hidden_size_1=hidden_size_1,
+            hidden_size_2=hidden_size_2,
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
