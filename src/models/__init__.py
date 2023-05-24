@@ -1,3 +1,3 @@
-from .auto_encoder import FullyConnectedAutoEncoderSGD
-from .mlp import MultiLayerPerceptronAdam
-from .resnet import ResnetSGD
+from .auto_encoder import FullyConnectedAutoEncoder, FullyConnectedAutoEncoderSGD
+from .mlp import MultiLayerPerceptron, MultiLayerPerceptronAdam
+from .resnet import Resnet, ResnetSGD
