@@ -13,11 +13,13 @@
 # ---
 
 # %%
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
 from datamodules import ImagesDataModule
+from IPython.core.display_functions import display
 from ipywidgets import interact
 from models import FullyConnectedAutoEncoder
 from torchvision.transforms import ToTensor
@@ -32,7 +34,26 @@ ckpt_dir = (
 for p in ckpt_dir.parents[::-1] + (ckpt_dir,):
     if not p.exists():
         raise ValueError(f"{p} not exists")
-sorted(ckpt_dir.glob("*"))
+
+
+def get_last_fn(p: Path):
+    last_fn = max(p.glob("**/*.ckpt"), key=lambda p: p.stat().st_mtime)
+    return (
+        datetime.fromtimestamp(last_fn.stat().st_mtime).isoformat(" "),  # noqa: DTZ006
+        last_fn.relative_to(p.parent).as_posix(),
+    )
+
+
+def sort_dict(d: dict):
+    d = dict(d)
+    return {k: d[k] for k in sorted(d)}
+
+
+all_ckpts = sort_dict(get_last_fn(subdir) for subdir in ckpt_dir.glob("*"))
+display(all_ckpts)
+
+# %%
+# torch.load(ckpt_dir/list(all_ckpts.values())[-1])['hyper_parameters']
 
 # %%
 model = FullyConnectedAutoEncoder.load_latest_checkpoint(ckpt_dir)
@@ -64,17 +85,21 @@ def show_tensors(imgs: list[torch.Tensor]):
 for x in [x_rand, x_real]:
     show_tensors([x[0], model(x.cuda())[0]])
 
-
 # %%
-def show_from_latent(x1: float, x2: float, x3: float, x4: float):
-    data = torch.tensor([x1, x2, x3, x4])
+n_latent = 8
+
+lims = (-2, 2, 0.01)
+all_lims = {f"x{i:02}": lims for i in range(n_latent)}
+
+
+def show_from_latent(**inputs):
+    data = torch.tensor(list(inputs.values()))
     data = data.view(1, -1).cuda()
     result = model.decoder(data)[0]
     show_tensors(result)
     plt.show()
 
 
-lims = (-2, 2, 0.01)
-interact(show_from_latent, x1=lims, x2=lims, x3=lims, x4=lims)
+interact(show_from_latent, **all_lims)
 
 # %%

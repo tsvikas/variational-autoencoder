@@ -46,6 +46,9 @@ def train(seed):
     # set model
     model = models.FullyConnectedAutoEncoderSGD(
         num_channels=datamodule.num_channels,
+        hidden_sizes=(256, 64, 8),
+        encoder_last_layer=torch.nn.LayerNorm,
+        encoder_last_layer_args=(8,),
         # SGD
         lr=0.05,
         momentum=0.9,
@@ -64,7 +67,7 @@ def train(seed):
 
     # set trainer
     trainer = Trainer(
-        max_epochs=30,
+        max_epochs=10,
         logger=logger,
         callbacks=[
             callbacks.RichModelSummary(max_depth=2),

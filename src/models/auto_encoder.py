@@ -11,6 +11,8 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
     def __init__(
         self,
         hidden_sizes=(64, 4),
+        encoder_last_layer=nn.Identity,
+        encoder_last_layer_args=(),
         image_size=28,
         num_channels=3,
         *,
@@ -47,7 +49,11 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
             h=self.image_size,
             w=self.image_size,
         )
-        self.encoder = nn.Sequential(encoder_rearrange, *encoder_layers[:-1], nn.Tanh())
+        self.encoder = nn.Sequential(
+            encoder_rearrange,
+            *encoder_layers[:-1],
+            encoder_last_layer(*encoder_last_layer_args),
+        )
 
         decoder_layers = []
         for size_in, size_out in itertools.pairwise(layer_sizes[::-1]):
@@ -68,7 +74,15 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
 
 
 class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
-    def __init__(self, hidden_sizes=(64, 4), image_size=28, num_channels=3, **kwargs):
+    def __init__(
+        self,
+        hidden_sizes=(64, 4),
+        encoder_last_layer=nn.Identity,
+        encoder_last_layer_args=(),
+        image_size=28,
+        num_channels=3,
+        **kwargs,
+    ):
         # optimizer
         optimizer_cls = torch.optim.SGD
         optimizer_argnames = ["lr", "momentum", "weight_decay"]
@@ -85,6 +99,8 @@ class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
 
         super().__init__(
             hidden_sizes=hidden_sizes,
+            encoder_last_layer=encoder_last_layer,
+            encoder_last_layer_args=encoder_last_layer_args,
             image_size=image_size,
             num_channels=num_channels,
             optimizer_cls=optimizer_cls,
