@@ -5,8 +5,6 @@ import torch
 import torch.nn.functional as F  # noqa: N812
 from torchmetrics.functional.classification import multiclass_accuracy
 
-from . import optimizers, schedulers
-
 
 class SimpleLightningModule(pl.LightningModule):
     @classmethod
