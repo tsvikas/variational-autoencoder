@@ -38,14 +38,10 @@ class SimpleLightningModule(pl.LightningModule):
 
 
 class LightningModuleWithOptimizer(SimpleLightningModule):
-    optimizer_cls = None
-    optimizer_argnames = []
-
-    def __init__(self, **kwargs):
-        self.optimizer_kwargs = {
-            k: kwargs.pop(k) for k in self.optimizer_argnames if k in kwargs
-        }
-        super().__init__(**kwargs)
+    def __init__(self, optimizer_cls=None, optimizer_kwargs=None):
+        super().__init__()
+        self.optimizer_cls = optimizer_cls
+        self.optimizer_kwargs = optimizer_kwargs or {}
 
     def configure_optimizers(self):
         if self.optimizer_cls is None:
@@ -56,16 +52,20 @@ class LightningModuleWithOptimizer(SimpleLightningModule):
 
 
 class LightningModuleWithScheduler(LightningModuleWithOptimizer):
-    scheduler_cls = None
-    scheduler_argnames = []
-    scheduler_interval = "epoch"
-    scheduler_add_total_steps = False
-
-    def __init__(self, **kwargs):
-        self.scheduler_kwargs = {
-            k: kwargs.pop(k) for k in self.scheduler_argnames if k in kwargs
-        }
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
+    ):
+        super().__init__(optimizer_cls=optimizer_cls, optimizer_kwargs=optimizer_kwargs)
+        self.scheduler_cls = scheduler_cls
+        self.scheduler_kwargs = scheduler_kwargs or {}
+        self.scheduler_interval = scheduler_interval
+        self.scheduler_add_total_steps = scheduler_add_total_steps
 
     def configure_optimizers(self):
         optimizer = super().configure_optimizers()
@@ -99,8 +99,24 @@ class NLLClassifier(LightningModuleWithScheduler):
     uses nll_loss
     """
 
-    def __init__(self, num_classes: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        num_classes: int,
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
+    ):
+        super().__init__(
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
         self.num_classes = num_classes
 
     def step(self, batch, batch_idx, stage: str, *, evaluate=False):
@@ -115,8 +131,27 @@ class NLLClassifier(LightningModuleWithScheduler):
 
 
 class ImageClassifier(NLLClassifier):
-    def __init__(self, image_size: int, num_channels: int, num_classes: int, **kwargs):
-        super().__init__(num_classes, **kwargs)
+    def __init__(
+        self,
+        image_size: int,
+        num_channels: int,
+        num_classes: int,
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
+    ):
+        super().__init__(
+            num_classes=num_classes,
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
         sample_batch_size = 32
         self.image_size = image_size or 96
         self.num_channels = num_channels
@@ -147,8 +182,25 @@ class AutoEncoder(LightningModuleWithScheduler):
 
 
 class ImageAutoEncoder(AutoEncoder):
-    def __init__(self, image_size: int, num_channels: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        image_size: int,
+        num_channels: int,
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
+    ):
+        super().__init__(
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
         sample_batch_size = 32
         self.image_size = image_size or 96
         self.num_channels = num_channels

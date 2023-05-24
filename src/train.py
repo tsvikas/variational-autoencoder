@@ -33,7 +33,7 @@ def train(seed, *, use_wandb=True):
     )
 
     # set model
-    model = models.FullyConnectedAutoEncoderSGD(
+    model = models.ResnetSGD(
         num_channels=datamodule.num_channels,
         # SGD
         lr=0.05,

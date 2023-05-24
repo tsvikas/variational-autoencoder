@@ -1,5 +1,6 @@
 import itertools
 
+import torch
 from einops.layers.torch import Rearrange
 from torch import nn
 
@@ -8,9 +9,28 @@ from . import base
 
 class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
     def __init__(
-        self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4), **kwargs
+        self,
+        image_size=28,
+        num_channels=3,
+        *,
+        hidden_sizes=(64, 4),
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
     ):
-        super().__init__(image_size=image_size, num_channels=num_channels, **kwargs)
+        super().__init__(
+            image_size=image_size,
+            num_channels=num_channels,
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
         self.save_hyperparameters()
 
         # create the model
@@ -47,7 +67,32 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         return x
 
 
-class FullyConnectedAutoEncoderSGD(
-    base.schedulers.OneCycleLR, base.optimizers.SGD, FullyConnectedAutoEncoder
-):
-    pass
+class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
+    def __init__(
+        self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4), **kwargs
+    ):
+        # optimizer
+        optimizer_cls = torch.optim.SGD
+        optimizer_argnames = ["lr", "momentum", "weight_decay"]
+        # scheduler
+        scheduler_cls = torch.optim.lr_scheduler.OneCycleLR
+        scheduler_argnames = ["max_lr"]
+        scheduler_interval = "step"
+        scheduler_add_total_steps = True
+
+        optimizer_kwargs = {k: kwargs.pop(k) for k in optimizer_argnames if k in kwargs}
+        scheduler_kwargs = {k: kwargs.pop(k) for k in scheduler_argnames if k in kwargs}
+        if kwargs:
+            raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
+
+        super().__init__(
+            image_size=image_size,
+            num_channels=num_channels,
+            hidden_sizes=hidden_sizes,
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+        )
