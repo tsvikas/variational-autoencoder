@@ -13,7 +13,21 @@ from torchvision import transforms
 LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
 
 
-def train(seed, *, use_wandb=True):
+def get_logger(project_name: str):
+    # save dir
+    save_dir = LOGS_DIR / project_name
+    save_dir.mkdir(exist_ok=True, parents=True)
+    logger = []
+    # wandb
+    if wandb.run is not None:
+        wandb.finish()
+    wandb_logger = loggers.WandbLogger(project=project_name, save_dir=save_dir)
+    logger.append(wandb_logger)
+    # return
+    return logger
+
+
+def train(seed):
     # set seed
     seed = seed_everything(seed)
 
@@ -25,15 +39,12 @@ def train(seed, *, use_wandb=True):
         num_classes=10,
         batch_size=256 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
-        train_transforms=[
-            transforms.RandomCrop(28),
-            # transforms.RandomHorizontalFlip(),
-        ],
+        train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
     )
 
     # set model
-    model = models.ResnetSGD(
+    model = models.FullyConnectedAutoEncoderSGD(
         num_channels=datamodule.num_channels,
         # SGD
         lr=0.05,
@@ -47,15 +58,9 @@ def train(seed, *, use_wandb=True):
     torch.set_float32_matmul_precision("medium")
 
     # set logger(s)
-    project_name = f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
-    logger = []
-    save_dir = LOGS_DIR / project_name
-    save_dir.mkdir(exist_ok=True, parents=True)
-    if use_wandb:
-        if wandb.run is not None:
-            wandb.finish()
-        wandb_logger = loggers.WandbLogger(project=project_name, save_dir=save_dir)
-        logger.append(wandb_logger)
+    logger = get_logger(
+        project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
+    )
 
     # set trainer
     trainer = Trainer(
@@ -65,7 +70,6 @@ def train(seed, *, use_wandb=True):
             callbacks.RichModelSummary(max_depth=2),
             callbacks.RichProgressBar(),
             callbacks.LearningRateMonitor(logging_interval="step"),
-            # callbacks.progress.TQDMProgressBar(refresh_rate=10),
             # callbacks.EarlyStopping("loss/validation"),
         ],
         precision="bf16-mixed",
