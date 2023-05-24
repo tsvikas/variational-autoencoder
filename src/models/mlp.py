@@ -10,12 +10,12 @@ from . import base
 class MultiLayerPerceptron(base.ImageClassifier):
     def __init__(
         self,
+        hidden_size_1=128,
+        hidden_size_2=256,
         image_size=28,
         num_channels=3,
         num_classes=10,
         *,
-        hidden_size_1=128,
-        hidden_size_2=256,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
@@ -63,12 +63,11 @@ class MultiLayerPerceptron(base.ImageClassifier):
 class MultiLayerPerceptronAdam(MultiLayerPerceptron):
     def __init__(
         self,
+        hidden_size_1=128,
+        hidden_size_2=256,
         image_size=28,
         num_channels=3,
         num_classes=10,
-        *,
-        hidden_size_1=128,
-        hidden_size_2=256,
         **kwargs,
     ):
         # optimizer

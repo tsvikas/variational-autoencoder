@@ -10,10 +10,10 @@ from . import base
 class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
     def __init__(
         self,
+        hidden_sizes=(64, 4),
         image_size=28,
         num_channels=3,
         *,
-        hidden_sizes=(64, 4),
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
@@ -68,9 +68,7 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
 
 
 class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
-    def __init__(
-        self, image_size=28, num_channels=3, *, hidden_sizes=(64, 4), **kwargs
-    ):
+    def __init__(self, hidden_sizes=(64, 4), image_size=28, num_channels=3, **kwargs):
         # optimizer
         optimizer_cls = torch.optim.SGD
         optimizer_argnames = ["lr", "momentum", "weight_decay"]
@@ -86,9 +84,9 @@ class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
             raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
 
         super().__init__(
+            hidden_sizes=hidden_sizes,
             image_size=image_size,
             num_channels=num_channels,
-            hidden_sizes=hidden_sizes,
             optimizer_cls=optimizer_cls,
             optimizer_kwargs=optimizer_kwargs,
             scheduler_cls=scheduler_cls,

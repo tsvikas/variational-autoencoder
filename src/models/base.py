@@ -52,6 +52,7 @@ class LightningModuleWithOptimizer(SimpleLightningModule):
 class LightningModuleWithScheduler(LightningModuleWithOptimizer):
     def __init__(
         self,
+        *,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
@@ -100,6 +101,7 @@ class NLLClassifier(LightningModuleWithScheduler):
     def __init__(
         self,
         num_classes: int,
+        *,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
@@ -134,6 +136,7 @@ class ImageClassifier(NLLClassifier):
         image_size: int,
         num_channels: int,
         num_classes: int,
+        *,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
@@ -184,6 +187,7 @@ class ImageAutoEncoder(AutoEncoder):
         self,
         image_size: int,
         num_channels: int,
+        *,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,

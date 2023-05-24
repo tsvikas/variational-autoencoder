@@ -12,6 +12,7 @@ class Resnet(base.ImageClassifier):
         image_size=None,
         num_channels=3,
         num_classes=10,
+        *,
         optimizer_cls=None,
         optimizer_kwargs=None,
         scheduler_cls=None,
