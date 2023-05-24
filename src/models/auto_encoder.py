@@ -14,7 +14,6 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         self.save_hyperparameters()
 
         # create the model
-        self.save_hyperparameters("hidden_sizes")
         input_size = num_channels * image_size * image_size
         layer_sizes = [input_size, *hidden_sizes]
 

@@ -69,6 +69,7 @@ def train(seed, *, use_wandb=True):
             # callbacks.EarlyStopping("loss/validation"),
         ],
         precision="bf16-mixed",
+        enable_model_summary=False,
     )
     trainer.logger.log_hyperparams({"seed": seed})
     trainer.test(model, datamodule=datamodule, verbose=False)
