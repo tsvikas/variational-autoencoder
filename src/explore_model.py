@@ -39,7 +39,7 @@ x = torch.rand(1, 1, 28, 28).cuda()
 
 
 # %%
-def show(imgs):
+def show_tensors(imgs: list[torch.Tensor]):
     if not isinstance(imgs, list):
         imgs = [imgs]
     fig, axss = plt.subplots(ncols=len(imgs), squeeze=False)
@@ -51,19 +51,19 @@ def show(imgs):
         axs[i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 
-show([x[0], model(x)[0]])
+show_tensors([x[0], model(x)[0]])
 
 
 # %%
-def update(x1, x2, x3, x4):
+def show_from_lateral(x1: float, x2: float, x3: float, x4: float):
     data = torch.tensor([x1, x2, x3, x4])
     data = data.view(1, -1).cuda()
     result = model.decoder(data)[0]
-    show(result)
+    show_tensors(result)
     plt.show()
 
 
 lims = (-2, 2, 0.01)
-interact(update, x1=lims, x2=lims, x3=lims, x4=lims)
+interact(show_from_lateral, x1=lims, x2=lims, x3=lims, x4=lims)
 
 # %%

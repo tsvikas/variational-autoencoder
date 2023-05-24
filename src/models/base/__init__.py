@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F  # noqa: N812
@@ -8,7 +10,7 @@ from . import optimizers, schedulers
 
 class SimpleLightningModule(pl.LightningModule):
     @classmethod
-    def load_latest_checkpoint(cls, base_dir, **kwargs):
+    def load_latest_checkpoint(cls, base_dir: Path, **kwargs):
         all_checkpoints = sorted(
             base_dir.glob("**/*.ckpt"), key=lambda p: p.stat().st_mtime
         )
@@ -17,7 +19,7 @@ class SimpleLightningModule(pl.LightningModule):
         ckpt_fn_latest = all_checkpoints[-1]
         return cls.load_from_checkpoint(ckpt_fn_latest, **kwargs)
 
-    def step(self, batch, batch_idx, stage, *, evaluate=False):
+    def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         """
         run a general training/validation/test step.
         return the loss
@@ -97,11 +99,11 @@ class NLLClassifier(LightningModuleWithScheduler):
     uses nll_loss
     """
 
-    def __init__(self, num_classes, **kwargs):
+    def __init__(self, num_classes: int, **kwargs):
         super().__init__(**kwargs)
         self.num_classes = num_classes
 
-    def step(self, batch, batch_idx, stage, *, evaluate=False):
+    def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         x, target = batch
         nll = self(x)
         loss = F.nll_loss(nll, target)
@@ -113,7 +115,7 @@ class NLLClassifier(LightningModuleWithScheduler):
 
 
 class ImageClassifier(NLLClassifier):
-    def __init__(self, image_size, num_channels, num_classes, **kwargs):
+    def __init__(self, image_size: int, num_channels: int, num_classes: int, **kwargs):
         super().__init__(num_classes, **kwargs)
         sample_batch_size = 32
         self.image_size = image_size or 96
@@ -131,7 +133,7 @@ class AutoEncoder(LightningModuleWithScheduler):
 
     n_images_to_save = 4
 
-    def step(self, batch, batch_idx, stage, *, evaluate=False):
+    def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         x, target = batch
         x2 = self(x)
         loss = F.mse_loss(x2, x)
@@ -145,7 +147,7 @@ class AutoEncoder(LightningModuleWithScheduler):
 
 
 class ImageAutoEncoder(AutoEncoder):
-    def __init__(self, image_size, num_channels, **kwargs):
+    def __init__(self, image_size: int, num_channels: int, **kwargs):
         super().__init__(**kwargs)
         sample_batch_size = 32
         self.image_size = image_size or 96
