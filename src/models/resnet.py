@@ -1,15 +1,17 @@
 import torch.nn.functional as F  # noqa: N812
-import torch.optim
 import torchvision
 from torch import nn
 
-from .modules import ImageClassifier
+from . import base
 
 
-class Resnet(ImageClassifier):
-    def __init__(self, image_size=None, num_channels=3, num_classes=10):
+class Resnet(base.ImageClassifier):
+    def __init__(self, image_size=None, num_channels=3, num_classes=10, **kwargs):
         super().__init__(
-            image_size=image_size, num_channels=num_channels, num_classes=num_classes
+            image_size=image_size,
+            num_channels=num_channels,
+            num_classes=num_classes,
+            **kwargs
         )
         self.save_hyperparameters()
         # create the model
@@ -27,12 +29,6 @@ class Resnet(ImageClassifier):
         assert x.shape == (batch_size, self.num_classes)
         return x
 
-    def configure_optimizers(self):
-        return self.create_optimizers(
-            optimizer_cls=torch.optim.SGD,
-            optimizer_hparams={"lr": 0.05, "momentum": 0.9, "weight_decay": 5e-4},
-            scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
-            scheduler_hparams={"max_lr": 0.1},
-            scheduler_interval="step",
-            add_total_steps=True,
-        )
+
+class ResnetSGD(base.schedulers.OneCycleLR, base.optimizers.SGD, Resnet):
+    pass

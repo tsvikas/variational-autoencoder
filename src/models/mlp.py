@@ -1,13 +1,12 @@
 # https://github.com/rubentea16/pl-mnist/blob/master/model.py
 # https://docs.ray.io/en/latest/tune/examples/includes/mnist_ptl_mini.html
 import torch.nn.functional as F  # noqa: N812
-import torch.optim
 from torch import nn
 
-from .modules import ImageClassifier
+from . import base
 
 
-class MultiLayerPerceptron(ImageClassifier):
+class MultiLayerPerceptron(base.ImageClassifier):
     def __init__(
         self,
         image_size=28,
@@ -16,9 +15,13 @@ class MultiLayerPerceptron(ImageClassifier):
         *,
         hidden_size_1=128,
         hidden_size_2=256,
+        **kwargs
     ):
         super().__init__(
-            image_size=image_size, num_channels=num_channels, num_classes=num_classes
+            image_size=image_size,
+            num_channels=num_channels,
+            num_classes=num_classes,
+            **kwargs
         )
         self.save_hyperparameters()
         # create the model
@@ -45,12 +48,8 @@ class MultiLayerPerceptron(ImageClassifier):
         assert x.shape == (batch_size, self.num_classes)
         return x
 
-    def configure_optimizers(self):
-        return self.create_optimizers(
-            optimizer_cls=torch.optim.Adam,
-            optimizer_hparams={"lr": 0.05},
-            scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-            scheduler_interval="epoch",
-            scheduler_hparams={"gamma": 0.95},
-            add_total_steps=False,
-        )
+
+class MultiLayerPerceptronAdam(
+    base.schedulers.ExponentialLR, base.optimizers.Adam, MultiLayerPerceptron
+):
+    pass
