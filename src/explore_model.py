@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.14.5
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -17,25 +17,35 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
+from datamodules import ImagesDataModule
 from ipywidgets import interact
-from models import FullyConnectedAutoEncoderSGD
+from models import FullyConnectedAutoEncoder
+from torchvision.transforms import ToTensor
 from torchvision.transforms.functional import to_pil_image
 
 # %%
 ckpt_dir = (
     Path("/tmp/logs")
-    / "fullyconnectedautoencoder-fashionmnist"
-    / "fullyconnectedautoencoder-fashionmnist"
+    / "fullyconnectedautoencodersgd-fashionmnist"
+    / "fullyconnectedautoencodersgd-fashionmnist"
 )
+for p in ckpt_dir.parents[::-1] + (ckpt_dir,):
+    if not p.exists():
+        raise ValueError(f"{p} not exists")
+sorted(ckpt_dir.glob("*"))
 
 # %%
-model = FullyConnectedAutoEncoderSGD.load_latest_checkpoint(ckpt_dir, num_channels=1)
+model = FullyConnectedAutoEncoder.load_latest_checkpoint(ckpt_dir)
 model.eval()
 print(model.hparams)
 print(model)
 
 # %%
-x = torch.rand(1, 1, 28, 28).cuda()
+x_rand = torch.rand(1, 1, 28, 28)
+image = ImagesDataModule("FashionMNIST", 1, 10).dataset()[0][0]
+
+x_real = ToTensor()(image).unsqueeze(0)
+print(x_real.shape)
 
 
 # %%
@@ -51,11 +61,12 @@ def show_tensors(imgs: list[torch.Tensor]):
         axs[i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
 
-show_tensors([x[0], model(x)[0]])
+for x in [x_rand, x_real]:
+    show_tensors([x[0], model(x.cuda())[0]])
 
 
 # %%
-def show_from_lateral(x1: float, x2: float, x3: float, x4: float):
+def show_from_latent(x1: float, x2: float, x3: float, x4: float):
     data = torch.tensor([x1, x2, x3, x4])
     data = data.view(1, -1).cuda()
     result = model.decoder(data)[0]
@@ -64,6 +75,6 @@ def show_from_lateral(x1: float, x2: float, x3: float, x4: float):
 
 
 lims = (-2, 2, 0.01)
-interact(show_from_lateral, x1=lims, x2=lims, x3=lims, x4=lims)
+interact(show_from_latent, x1=lims, x2=lims, x3=lims, x4=lims)
 
 # %%

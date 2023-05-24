@@ -15,6 +15,7 @@ class SimpleLightningModule(pl.LightningModule):
         if not all_checkpoints:
             raise RuntimeError("no checkpoints found")
         ckpt_fn_latest = all_checkpoints[-1]
+        print(f"loading from {ckpt_fn_latest}")  # noqa: T201
         return cls.load_from_checkpoint(ckpt_fn_latest, **kwargs)
 
     def step(self, batch, batch_idx, stage: str, *, evaluate=False):
