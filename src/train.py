@@ -7,6 +7,7 @@ import datamodules
 import models
 import torch
 import wandb
+from datamodules.noise import GaussianNoise, SaltPepperNoise
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
 
@@ -27,12 +28,8 @@ def get_logger(project_name: str):
     return logger
 
 
-def train(seed):
-    # set seed
-    seed = seed_everything(seed)
-
-    # set data
-    datamodule = datamodules.ImagesDataModule(
+def get_datamodule():
+    return datamodules.ImagesDataModule(
         # see torchvision.datasets for options
         "FashionMNIST",
         num_channels=1,
@@ -41,7 +38,17 @@ def train(seed):
         num_workers=os.cpu_count() - 1,
         train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
+        target_is_self=True,
+        noise_transforms=[GaussianNoise(0.05), SaltPepperNoise(0.05, 0.05)],
     )
+
+
+def train(seed):
+    # set seed
+    seed = seed_everything(seed)
+
+    # set data
+    datamodule = get_datamodule()
 
     # set model
     model = models.FullyConnectedAutoEncoderSGD(
@@ -67,7 +74,7 @@ def train(seed):
 
     # set trainer
     trainer = Trainer(
-        max_epochs=10,
+        max_epochs=30,
         logger=logger,
         callbacks=[
             callbacks.RichModelSummary(max_depth=2),
@@ -77,6 +84,7 @@ def train(seed):
         ],
         precision="bf16-mixed",
         enable_model_summary=False,
+        fast_dev_run=True,
     )
     trainer.logger.log_hyperparams({"seed": seed})
     trainer.test(model, datamodule=datamodule, verbose=False)
