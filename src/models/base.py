@@ -173,7 +173,7 @@ class AutoEncoder(LightningModuleWithScheduler):
     def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         x, target = batch
         x2 = self(x)
-        loss = F.mse_loss(x2, x)
+        loss = F.mse_loss(x2, target)
         self.log(f"loss/{stage}", loss, prog_bar=evaluate)
         if stage == "validation":
             if self.global_step == 0 and batch_idx == 0:

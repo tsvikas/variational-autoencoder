@@ -62,6 +62,8 @@ class ImagesDataModule(LightningDataModule):
         eval_transforms: list[torch.nn.Module] | None = None,
         num_workers: int = 1,
         val_size_or_frac: int | float = 0.2,
+        target_is_self=False,
+        noise_transforms: list[torch.nn.Module] | None = None,
     ):
         super().__init__()
         self.dataset_name, self.dataset_cls = parse_name_or_cls(
@@ -79,6 +81,8 @@ class ImagesDataModule(LightningDataModule):
         self.eval_transforms = eval_transforms or []
         self.num_workers = num_workers
         self.val_size_or_frac = val_size_or_frac
+        self.target_is_self = target_is_self
+        self.noise_transforms = noise_transforms or []
 
         # defined in self.setup()
         self.train_val_size = None
@@ -150,6 +154,11 @@ class ImagesDataModule(LightningDataModule):
             train=True,
             download=False,
         )
+        if self.target_is_self:
+            self.train_set = TransformedSelfDataset(
+                self.train_set, transforms=self.noise_transforms
+            )
+
         self.test_set = self.dataset_cls(
             root=self.data_dir,
             train=False,
@@ -175,13 +184,30 @@ class ImagesDataModule(LightningDataModule):
         return self.test_set.classes
 
     # added for exploration:
-    def dataset(self, *, train=True, transforms=None, to_tensor=False, normalize=False):
+    def dataset(
+        self,
+        *,
+        train=True,
+        transforms=None,
+        to_tensor=False,
+        normalize=False,
+        tensor_transforms=None,
+    ):
         if transforms is None:
             transforms = []
         if to_tensor:
             transforms.append(torchvision.transforms.ToTensor())
-        if normalize:
-            transforms.append(self.normalize_transform)
+            if normalize:
+                transforms.append(self.normalize_transform)
+            if tensor_transforms is not None:
+                transforms.extend(tensor_transforms)
+        else:
+            if normalize:
+                raise ValueError("can't normalize without converting to tensor")
+            if tensor_transforms:
+                raise ValueError(
+                    "can't use tensor_transforms without converting to tensor"
+                )
         transform = torchvision.transforms.Compose(transforms) if transforms else None
         return self.dataset_cls(self.data_dir, train=train, transform=transform)
 
@@ -225,3 +251,22 @@ def calc_mean_and_std(images):
     mean = images.mean((0, 1, 2)).tolist()
     std = images.std((0, 1, 2)).tolist()
     return mean, std
+
+
+class TransformedSelfDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, transforms=None):
+        super().__init__()
+        self.dataset = dataset
+        transforms = transforms or []
+        self.transform = torchvision.transforms.Compose(transforms)
+
+    def __getitem__(self, item):
+        image, label = self.dataset[item]
+        return self.transform(image), image
+
+    def __len__(self):
+        return len(self.dataset)
+
+    @property
+    def data(self):
+        return self.dataset.data
