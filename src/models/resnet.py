@@ -17,6 +17,7 @@ class Resnet(base.ImageClassifier):
         scheduler_cls=None,
         scheduler_kwargs=None,
         scheduler_interval="epoch",
+        scheduler_frequency=None,
         scheduler_add_total_steps=False,
         scheduler_monitor=None,
     ):
@@ -29,6 +30,7 @@ class Resnet(base.ImageClassifier):
             scheduler_cls=scheduler_cls,
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
+            scheduler_frequency=scheduler_frequency,
             scheduler_add_total_steps=scheduler_add_total_steps,
             scheduler_monitor=scheduler_monitor,
         )
