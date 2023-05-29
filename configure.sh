@@ -20,8 +20,8 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry env use python3.11
 poetry install
 if [[ $(nvcc --version) != *11.7* ]]; then
-  poetry run pip uninstall -y torch torchvision torchaudio
-  poetry run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+  poetry run pip uninstall -qy torch torchvision torchaudio
+  poetry run pip install -q torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 fi
 # setup needed libraries
 poetry run wandb login "$(cat wandb_api_key.secret)"
