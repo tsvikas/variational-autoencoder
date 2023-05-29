@@ -165,7 +165,7 @@ class AutoEncoder(LightningModuleWithScheduler):
     uses mse_loss
     """
 
-    n_images_to_save = 4
+    n_images_to_save = 8
 
     def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         x, target = batch
@@ -175,6 +175,7 @@ class AutoEncoder(LightningModuleWithScheduler):
         loss = F.mse_loss(x2, target)
         self.log(f"loss/{stage}", loss, prog_bar=evaluate)
         if stage == "validation":
+            assert torch.equal(x, target)
             if self.global_step == 0 and batch_idx == 0:
                 self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
             if batch_idx == 0:
