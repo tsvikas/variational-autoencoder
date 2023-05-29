@@ -39,7 +39,7 @@ def get_datamodule():
         train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
         target_is_self=True,
-        noise_transforms=[GaussianNoise(0.05), SaltPepperNoise(0.05, 0.05)],
+        noise_transforms=[GaussianNoise(0.1), SaltPepperNoise(0.1, 0.1)],
     )
 
 
@@ -51,19 +51,40 @@ def train(seed):
     datamodule = get_datamodule()
 
     # set model
-    model = models.FullyConnectedAutoEncoderSGD(
+    model = models.FullyConnectedAutoEncoder(
         num_channels=datamodule.num_channels,
         hidden_sizes=(256, 64, 8),
         encoder_last_layer=torch.nn.LayerNorm,
         encoder_last_layer_args=(8,),
-        # SGD
-        lr=0.05,
-        momentum=0.9,
-        weight_decay=5e-4,
-        max_lr=0.1,
+        # # SGD
+        # optimizer_cls=torch.optim.SGD,
+        # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
+        # AdamW
+        optimizer_cls=torch.optim.Adam,
+        optimizer_kwargs=dict(lr=0.01),
+        # # ReduceLROnPlateau
+        # scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        # scheduler_kwargs=dict(patience=1, threshold=0.05, factor=0.1),
+        # scheduler_monitor="loss/training",
+        # scheduler_interval="epoch",
+        # # LambdaLR
+        # optimizer_kwargs=dict(lr=1),
+        # scheduler_cls=torch.optim.lr_scheduler.LambdaLR,
+        # scheduler_kwargs=dict(lr_lambda=lambda step: min(0.01, (step+1e-8)**-0.5)),
+        # scheduler_interval="step",
+        # OneCycleLR
+        # scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
+        # scheduler_kwargs=dict(max_lr=0.1),
+        # scheduler_interval="step",
+        # scheduler_add_total_steps=True,
         # # Adam
-        # lr=0.05,
-        # gamma=0.95,
+        # optimizer_cls=torch.optim.Adam,
+        # optimizer_kwargs=dict(lr=0.05),
+        # ExponentialLR
+        scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+        scheduler_kwargs=dict(gamma=0.95),
+        scheduler_interval="epoch",
+        scheduler_add_total_steps=False,
     )
     torch.set_float32_matmul_precision("medium")
 
@@ -84,7 +105,6 @@ def train(seed):
         ],
         precision="bf16-mixed",
         enable_model_summary=False,
-        fast_dev_run=True,
     )
     trainer.logger.log_hyperparams({"seed": seed})
     trainer.test(model, datamodule=datamodule, verbose=False)
