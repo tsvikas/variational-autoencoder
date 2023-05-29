@@ -46,7 +46,6 @@ class LightningModuleWithOptimizer(SimpleLightningModule):
         if self.optimizer_cls is None:
             raise ValueError("must define an optimizer_cls")
         optimizer = self.optimizer_cls(self.parameters(), **self.optimizer_kwargs)
-        self.logger.log_hyperparams({"optimizer": self.optimizer_cls.__name__})
         return optimizer
 
 
@@ -58,18 +57,21 @@ class LightningModuleWithScheduler(LightningModuleWithOptimizer):
         optimizer_kwargs=None,
         scheduler_cls=None,
         scheduler_kwargs=None,
-        scheduler_interval="epoch",
-        scheduler_add_total_steps=False,
+        scheduler_interval=None,
+        scheduler_add_total_steps=None,
+        scheduler_monitor=None,
     ):
         super().__init__(optimizer_cls=optimizer_cls, optimizer_kwargs=optimizer_kwargs)
         self.scheduler_cls = scheduler_cls
         self.scheduler_kwargs = scheduler_kwargs or {}
         self.scheduler_interval = scheduler_interval
         self.scheduler_add_total_steps = scheduler_add_total_steps
+        self.scheduler_monitor = scheduler_monitor
 
     def configure_optimizers(self):
         optimizer = super().configure_optimizers()
-
+        if self.scheduler_cls is None:
+            return optimizer
         scheduler_interval_options = ["epoch", "step"]
         if self.scheduler_interval not in scheduler_interval_options:
             raise ValueError(f"scheduler_interval not in {scheduler_interval_options}")
@@ -83,13 +85,8 @@ class LightningModuleWithScheduler(LightningModuleWithOptimizer):
             ),
             "interval": self.scheduler_interval,
         }
-        self.logger.log_hyperparams(
-            {
-                "scheduler": self.scheduler_cls.__name__,
-                "scheduler_interval": self.scheduler_interval,
-            }
-        )
-
+        if self.scheduler_monitor is not None:
+            lr_scheduler["monitor"] = self.scheduler_monitor
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
 
 
@@ -197,6 +194,7 @@ class ImageAutoEncoder(AutoEncoder):
         scheduler_kwargs=None,
         scheduler_interval="epoch",
         scheduler_add_total_steps=False,
+        scheduler_monitor=None,
     ):
         super().__init__(
             optimizer_cls=optimizer_cls,
@@ -205,6 +203,7 @@ class ImageAutoEncoder(AutoEncoder):
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
             scheduler_add_total_steps=scheduler_add_total_steps,
+            scheduler_monitor=scheduler_monitor,
         )
         sample_batch_size = 32
         self.image_size = image_size or 96
