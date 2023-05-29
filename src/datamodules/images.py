@@ -66,6 +66,7 @@ class ImagesDataModule(LightningDataModule):
         noise_transforms: list[torch.nn.Module] | None = None,
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.dataset_name, self.dataset_cls = parse_name_or_cls(
             dataset_name_or_cls, torchvision.datasets
         )
