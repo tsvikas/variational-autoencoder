@@ -1,6 +1,5 @@
 import itertools
 
-import torch
 from einops.layers.torch import Rearrange
 from torch import nn
 
@@ -73,42 +72,3 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
-
-
-class FullyConnectedAutoEncoderSGD(FullyConnectedAutoEncoder):
-    def __init__(
-        self,
-        hidden_sizes=(64, 4),
-        encoder_last_layer=nn.Identity,
-        encoder_last_layer_args=(),
-        image_size=28,
-        num_channels=3,
-        **kwargs,
-    ):
-        # optimizer
-        optimizer_cls = torch.optim.SGD
-        optimizer_argnames = ["lr", "momentum", "weight_decay"]
-        # scheduler
-        scheduler_cls = torch.optim.lr_scheduler.OneCycleLR
-        scheduler_argnames = ["max_lr"]
-        scheduler_interval = "step"
-        scheduler_add_total_steps = True
-
-        optimizer_kwargs = {k: kwargs.pop(k) for k in optimizer_argnames if k in kwargs}
-        scheduler_kwargs = {k: kwargs.pop(k) for k in scheduler_argnames if k in kwargs}
-        if kwargs:
-            raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
-
-        super().__init__(
-            hidden_sizes=hidden_sizes,
-            encoder_last_layer=encoder_last_layer,
-            encoder_last_layer_args=encoder_last_layer_args,
-            image_size=image_size,
-            num_channels=num_channels,
-            optimizer_cls=optimizer_cls,
-            optimizer_kwargs=optimizer_kwargs,
-            scheduler_cls=scheduler_cls,
-            scheduler_kwargs=scheduler_kwargs,
-            scheduler_interval=scheduler_interval,
-            scheduler_add_total_steps=scheduler_add_total_steps,
-        )
