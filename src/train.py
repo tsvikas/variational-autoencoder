@@ -93,18 +93,36 @@ def train(seed):
         project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
     )
 
-    # set trainer
+    # trainer settings
+    max_epochs = 30
+    trainer_callbacks = [
+        callbacks.EarlyStopping("loss/validation", min_delta=0.001),
+    ]
+
+    # set precision
     torch.set_float32_matmul_precision("medium")
+    precision = "bf16-mixed"
+
+    # fast_dev_run, to prevent logging of failed runs
+    trainer_fast = Trainer(
+        fast_dev_run=True,
+        enable_model_summary=False,
+        enable_progress_bar=False,
+        precision=precision,
+    )
+    trainer_fast.fit(model, datamodule=datamodule)
+
+    # set trainer
     trainer = Trainer(
-        max_epochs=30,
+        max_epochs=max_epochs,
         logger=logger,
         callbacks=[
             callbacks.RichModelSummary(max_depth=2),
             callbacks.RichProgressBar(),
             callbacks.LearningRateMonitor(logging_interval="step"),
-            callbacks.EarlyStopping("loss/validation", min_delta=0.001),
+            *trainer_callbacks,
         ],
-        precision="bf16-mixed",
+        precision=precision,
         enable_model_summary=False,
     )
     trainer.logger.log_hyperparams({"seed": seed})
