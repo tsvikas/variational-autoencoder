@@ -56,11 +56,13 @@ def train(seed):
         hidden_sizes=(256, 64, 8),
         encoder_last_layer=torch.nn.LayerNorm,
         encoder_last_layer_args=(8,),
+        decoder_last_layer=torch.nn.Identity,
+        decoder_last_layer_args=(),
         # # SGD
         # optimizer_cls=torch.optim.SGD,
         # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
         # AdamW
-        optimizer_cls=torch.optim.Adam,
+        optimizer_cls=torch.optim.AdamW,
         optimizer_kwargs=dict(lr=0.01),
         # # ReduceLROnPlateau
         # scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,

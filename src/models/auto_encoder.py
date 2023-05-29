@@ -12,6 +12,8 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         hidden_sizes=(64, 4),
         encoder_last_layer=nn.Identity,
         encoder_last_layer_args=(),
+        decoder_last_layer=nn.Tanh,
+        decoder_last_layer_args=(),
         image_size=28,
         num_channels=3,
         *,
@@ -44,6 +46,7 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         for size_in, size_out in itertools.pairwise(layer_sizes):
             encoder_layers.append(nn.Linear(size_in, size_out))
             encoder_layers.append(nn.ReLU())
+        encoder_layers = encoder_layers[:-1]
         encoder_rearrange = Rearrange(
             "b c h w -> b (c h w)",
             c=self.num_channels,
@@ -52,7 +55,7 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         )
         self.encoder = nn.Sequential(
             encoder_rearrange,
-            *encoder_layers[:-1],
+            *encoder_layers,
             encoder_last_layer(*encoder_last_layer_args),
         )
 
@@ -60,13 +63,18 @@ class FullyConnectedAutoEncoder(base.ImageAutoEncoder):
         for size_in, size_out in itertools.pairwise(layer_sizes[::-1]):
             decoder_layers.append(nn.Linear(size_in, size_out))
             decoder_layers.append(nn.ReLU())
+        decoder_layers = decoder_layers[:-1]
         decoder_rearrange = Rearrange(
             "b (c h w) -> b c h w",
             c=self.num_channels,
             h=self.image_size,
             w=self.image_size,
         )
-        self.decoder = nn.Sequential(*decoder_layers[:-1], nn.Tanh(), decoder_rearrange)
+        self.decoder = nn.Sequential(
+            *decoder_layers,
+            decoder_last_layer(*decoder_last_layer_args),
+            decoder_rearrange,
+        )
 
     def forward(self, x):
         x = self.encoder(x)
