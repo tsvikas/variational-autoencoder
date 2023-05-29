@@ -8,8 +8,8 @@ authors = ["Tsvika S <tsvikas@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-torch = "^2.0.0"
-torchvision = "^0.15.1"
+torch = {version = "^2.0.0", source = "pytorch"}
+torchvision = {version = "^0.15.1", source = "pytorch"}
 pytorch-lightning = "^2.0.2"
 wandb = "^0.15.2"
 rich = "^13.3.5"
@@ -26,6 +26,12 @@ python-lsp-server = "^1.7.3"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.1"
 ruff = "^0.0.264"
+
+[[tool.poetry.source]]
+name = "pytorch"
+# to use with cuda 11.8+, replace this with https://download.pytorch.org/whl/cu118
+url = "https://pypi.org/"
+priority = "explicit"
 
 [tool.ruff]
 select = ["ALL"]
