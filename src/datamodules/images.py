@@ -154,17 +154,18 @@ class ImagesDataModule(LightningDataModule):
             train=True,
             download=False,
         )
-        if self.target_is_self:
-            self.train_set = TransformedSelfDataset(
-                self.train_set, transforms=self.noise_transforms
-            )
-
         self.test_set = self.dataset_cls(
             root=self.data_dir,
             train=False,
             download=False,
             transform=torchvision.transforms.Compose(test_transforms),
         )
+        if self.target_is_self:
+            self.train_set = TransformedSelfDataset(
+                self.train_set, transforms=self.noise_transforms
+            )
+            self.val_set = TransformedSelfDataset(self.val_set)
+            self.test_set = TransformedSelfDataset(self.test_set)
 
         # verify num_classes and num_channels
         if (num_classes := len(self.test_set.classes)) != self.num_classes:
@@ -267,6 +268,5 @@ class TransformedSelfDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    @property
-    def data(self):
-        return self.dataset.data
+    def __getattr__(self, item):
+        return getattr(self.dataset, item)
