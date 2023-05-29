@@ -18,12 +18,13 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
-from datamodules import ImagesDataModule
 from IPython.core.display_functions import display
 from ipywidgets import interact
-from models import FullyConnectedAutoEncoder
 from torchvision.transforms import ToTensor
 from torchvision.transforms.functional import to_pil_image
+
+from datamodules import ImagesDataModule
+from models import FullyConnectedAutoEncoder
 
 # %%
 ckpt_dir = (
