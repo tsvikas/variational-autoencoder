@@ -7,7 +7,7 @@ authors = ["Tsvika S <tsvikas@gmail.com>"]
 #packages = [{ include = "models", from = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.11,!=3.11.0"
 torch = {version = "^2.0.0", source = "pytorch"}
 torchvision = {version = "^0.15.1", source = "pytorch"}
 pytorch-lightning = "^2.0.2"
@@ -26,6 +26,7 @@ python-lsp-server = "^1.7.3"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.1"
 ruff = "^0.0.264"
+scalene = "^1.5.21.2"
 
 [[tool.poetry.source]]
 name = "pytorch"
