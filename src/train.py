@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import tempfile
+import time
 from pathlib import Path
 
 import datamodules
@@ -34,7 +35,7 @@ def get_datamodule():
         "FashionMNIST",
         num_channels=1,
         num_classes=10,
-        batch_size=256 if torch.cuda.is_available() else 64,
+        batch_size=512 if torch.cuda.is_available() else 64,
         num_workers=os.cpu_count() - 1,
         train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
@@ -100,7 +101,7 @@ def train(seed):
             callbacks.RichModelSummary(max_depth=2),
             callbacks.RichProgressBar(),
             callbacks.LearningRateMonitor(logging_interval="step"),
-            # callbacks.EarlyStopping("loss/validation"),
+            callbacks.EarlyStopping("loss/validation", min_delta=0.001),
         ],
         precision="bf16-mixed",
         enable_model_summary=False,
@@ -109,7 +110,10 @@ def train(seed):
 
     # run trainer
     trainer.test(model, datamodule=datamodule, verbose=False)
+    t_start = time.time()
     trainer.fit(model, datamodule=datamodule)
+    t_total = time.time() - t_start
+    print(f"Training took {t_total:.2f} seconds", flush=True)
     trainer.test(model, datamodule=datamodule)
 
 

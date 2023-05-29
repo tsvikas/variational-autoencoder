@@ -48,7 +48,7 @@ ignore = [
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
-"src/train.py" = ["INP001"]
+"src/train.py" = ["INP001", "T201"]
 "src/explore_model.py" = [
     "INP001",
     "E703",
