@@ -65,6 +65,7 @@ class LightningModuleWithScheduler(LightningModuleWithOptimizer):
         scheduler_cls=None,
         scheduler_kwargs=None,
         scheduler_interval=None,
+        scheduler_frequency=None,
         scheduler_add_total_steps=None,
         scheduler_monitor=None,
     ):
@@ -72,6 +73,7 @@ class LightningModuleWithScheduler(LightningModuleWithOptimizer):
         self.scheduler_cls = scheduler_cls
         self.scheduler_kwargs = scheduler_kwargs or {}
         self.scheduler_interval = scheduler_interval
+        self.scheduler_frequency = scheduler_frequency
         self.scheduler_add_total_steps = scheduler_add_total_steps
         self.scheduler_monitor = scheduler_monitor
 
@@ -94,6 +96,8 @@ class LightningModuleWithScheduler(LightningModuleWithOptimizer):
         }
         if self.scheduler_monitor is not None:
             lr_scheduler["monitor"] = self.scheduler_monitor
+        if self.scheduler_frequency is not None:
+            lr_scheduler["frequency"] = self.scheduler_frequency
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
 
 
@@ -112,6 +116,7 @@ class NLLClassifier(LightningModuleWithScheduler):
         scheduler_cls=None,
         scheduler_kwargs=None,
         scheduler_interval="epoch",
+        scheduler_frequency=None,
         scheduler_add_total_steps=False,
         scheduler_monitor=None,
     ):
@@ -121,6 +126,7 @@ class NLLClassifier(LightningModuleWithScheduler):
             scheduler_cls=scheduler_cls,
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
+            scheduler_frequency=scheduler_frequency,
             scheduler_add_total_steps=scheduler_add_total_steps,
             scheduler_monitor=scheduler_monitor,
         )
@@ -149,6 +155,7 @@ class ImageClassifier(NLLClassifier):
         scheduler_cls=None,
         scheduler_kwargs=None,
         scheduler_interval="epoch",
+        scheduler_frequency=None,
         scheduler_add_total_steps=False,
         scheduler_monitor=None,
     ):
@@ -159,6 +166,7 @@ class ImageClassifier(NLLClassifier):
             scheduler_cls=scheduler_cls,
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
+            scheduler_frequency=scheduler_frequency,
             scheduler_add_total_steps=scheduler_add_total_steps,
             scheduler_monitor=scheduler_monitor,
         )
@@ -205,6 +213,7 @@ class ImageAutoEncoder(AutoEncoder):
         scheduler_cls=None,
         scheduler_kwargs=None,
         scheduler_interval="epoch",
+        scheduler_frequency=None,
         scheduler_add_total_steps=False,
         scheduler_monitor=None,
     ):
@@ -214,6 +223,7 @@ class ImageAutoEncoder(AutoEncoder):
             scheduler_cls=scheduler_cls,
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
+            scheduler_frequency=scheduler_frequency,
             scheduler_add_total_steps=scheduler_add_total_steps,
             scheduler_monitor=scheduler_monitor,
         )
