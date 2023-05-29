@@ -21,6 +21,7 @@ class MultiLayerPerceptron(base.ImageClassifier):
         scheduler_kwargs=None,
         scheduler_interval="epoch",
         scheduler_add_total_steps=False,
+        scheduler_monitor=None,
     ):
         super().__init__(
             image_size=image_size,
@@ -32,6 +33,7 @@ class MultiLayerPerceptron(base.ImageClassifier):
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
             scheduler_add_total_steps=scheduler_add_total_steps,
+            scheduler_monitor=scheduler_monitor,
         )
         self.save_hyperparameters()
         # create the model

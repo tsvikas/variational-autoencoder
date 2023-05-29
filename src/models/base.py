@@ -113,6 +113,7 @@ class NLLClassifier(LightningModuleWithScheduler):
         scheduler_kwargs=None,
         scheduler_interval="epoch",
         scheduler_add_total_steps=False,
+        scheduler_monitor=None,
     ):
         super().__init__(
             optimizer_cls=optimizer_cls,
@@ -121,6 +122,7 @@ class NLLClassifier(LightningModuleWithScheduler):
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
             scheduler_add_total_steps=scheduler_add_total_steps,
+            scheduler_monitor=scheduler_monitor,
         )
         self.num_classes = num_classes
 
@@ -148,6 +150,7 @@ class ImageClassifier(NLLClassifier):
         scheduler_kwargs=None,
         scheduler_interval="epoch",
         scheduler_add_total_steps=False,
+        scheduler_monitor=None,
     ):
         super().__init__(
             num_classes=num_classes,
@@ -157,6 +160,7 @@ class ImageClassifier(NLLClassifier):
             scheduler_kwargs=scheduler_kwargs,
             scheduler_interval=scheduler_interval,
             scheduler_add_total_steps=scheduler_add_total_steps,
+            scheduler_monitor=scheduler_monitor,
         )
         sample_batch_size = 32
         self.image_size = image_size or 96
