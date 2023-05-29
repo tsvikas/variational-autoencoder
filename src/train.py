@@ -11,7 +11,7 @@ from torchvision import transforms
 
 import datamodules
 import models
-from datamodules.noise import GaussianNoise, SaltPepperNoise
+from datamodules import noise
 
 LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
 
@@ -41,7 +41,7 @@ def get_datamodule():
         train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
         target_is_self=True,
-        noise_transforms=[GaussianNoise(0.1), SaltPepperNoise(0.1, 0.1)],
+        noise_transforms=[noise.GaussianNoise(0.1), noise.SaltPepperNoise(0.1, 0.1)],
     )
 
 
