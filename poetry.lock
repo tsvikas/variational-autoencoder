@@ -575,17 +575,6 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
-name = "cloudpickle"
-version = "2.2.1"
-description = "Extended pickling support for Python objects"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "cloudpickle-2.2.1-py3-none-any.whl", hash = "sha256:61f594d1f4c295fa5cd9014ceb3a1fc4a70b0de1164b94fbc2d854ccba056f9f"},
-    {file = "cloudpickle-2.2.1.tar.gz", hash = "sha256:d89684b8de9e34a2a43b3460fbca07d09d6e25ce858df4d5a44240403b6178f5"},
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -2414,17 +2403,6 @@ files = [
 plugins = ["importlib-metadata"]
 
 [[package]]
-name = "pynvml"
-version = "11.4.1"
-description = "Python Bindings for the NVIDIA Management Library"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pynvml-11.4.1-py3-none-any.whl", hash = "sha256:d27be542cd9d06558de18e2deffc8022ccd7355bc7382255d477038e7e424c6c"},
-    {file = "pynvml-11.4.1.tar.gz", hash = "sha256:b2e4a33b80569d093b513f5804db0c7f40cfc86f15a013ae7a8e99c5e175d5dd"},
-]
-
-[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -2845,38 +2823,6 @@ files = [
     {file = "ruff-0.0.264-py3-none-win_arm64.whl", hash = "sha256:3e2c38449548e122f2612843a7c04e22b4fd491656955c57b8cb05df11639ad6"},
     {file = "ruff-0.0.264.tar.gz", hash = "sha256:8fcd4b693ca1374eb7a5796581c90689f884f98f388740d94f0702fd30f8f78f"},
 ]
-
-[[package]]
-name = "scalene"
-version = "1.5.21.2"
-description = "Scalene: A high-resolution, low-overhead CPU, GPU, and memory profiler for Python"
-optional = false
-python-versions = ">=3.8,!=3.11.0"
-files = [
-    {file = "scalene-1.5.21.2-cp310-cp310-macosx_11_7_universal2.whl", hash = "sha256:390bbfaeee85c857491208c6b0c6ba0c1a5e22fbe48c01ecc02b54d7537e1570"},
-    {file = "scalene-1.5.21.2-cp310-cp310-manylinux_2_24_x86_64.whl", hash = "sha256:4ec3761e95dd044ccfb9765c5ef82520ba3e3f98fa1b03d9c0615133fb8d3330"},
-    {file = "scalene-1.5.21.2-cp310-cp310-win_amd64.whl", hash = "sha256:63f605c50748abd569c309894c4df1140e7110bba19c5f0c2fea9ba63dc1310c"},
-    {file = "scalene-1.5.21.2-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:c2f8d2aa936532d4440252a54644bd9983fa3ad5af04321426897fb6624b376c"},
-    {file = "scalene-1.5.21.2-cp311-cp311-manylinux_2_24_x86_64.whl", hash = "sha256:17efceb7354537c03596bf3b915cf16a664eb795e2174ea32caf754d529a4e44"},
-    {file = "scalene-1.5.21.2-cp311-cp311-win_amd64.whl", hash = "sha256:06e760349ba34480d05a9ed011857cb6c6a62045649885ba65eae3a5a5481cb3"},
-    {file = "scalene-1.5.21.2-cp37-cp37m-macosx_10_15_universal2.whl", hash = "sha256:1d53b9ceb13a8f307a9a3037a09e837b4a096c111cf5d34aba20295d4874fdba"},
-    {file = "scalene-1.5.21.2-cp37-cp37m-manylinux_2_24_x86_64.whl", hash = "sha256:304e190d8e63c8edb89da090d42194f966bb91ed246dcf746b24236bae31c6cd"},
-    {file = "scalene-1.5.21.2-cp38-cp38-macosx_10_15_universal2.whl", hash = "sha256:b8c1816aed21c70171d20fd9d617e41c030ee333712e870e092f2da7dc3cd002"},
-    {file = "scalene-1.5.21.2-cp38-cp38-manylinux_2_24_x86_64.whl", hash = "sha256:41afd36effe8fa62052abe602348facfcb8945d1730cdc1caa1d56b3c2e6f71e"},
-    {file = "scalene-1.5.21.2-cp38-cp38-win_amd64.whl", hash = "sha256:312f9d08c3e6bcb086b8363245c932b09f4f27c3a0501e51bdfbcfc22683e5fb"},
-    {file = "scalene-1.5.21.2-cp39-cp39-macosx_11_7_universal2.whl", hash = "sha256:78687e1081b5ed385a9f0d84c5a1528c7e7ef768a7f214145e2917694ce05f7f"},
-    {file = "scalene-1.5.21.2-cp39-cp39-manylinux_2_24_x86_64.whl", hash = "sha256:f9eda1727e5d211ecbe15a53881af3393609a3c606419e32920951b568ffcb46"},
-    {file = "scalene-1.5.21.2-cp39-cp39-win_amd64.whl", hash = "sha256:db81038fc22fbd9376985a7ae5544983c1c91317799ee93bcc28573396b52390"},
-    {file = "scalene-1.5.21.2.tar.gz", hash = "sha256:1580d74fe45545b36bd805ea1508c475ea794abe05bf590e2e59506da8c0d03e"},
-]
-
-[package.dependencies]
-cloudpickle = ">=1.5.0"
-Jinja2 = ">=3.0.3"
-psutil = ">=5.9.2"
-pynvml = ">=11.0.0,<11.5"
-rich = ">=10.7.0"
-wheel = ">=0.36.1"
 
 [[package]]
 name = "send2trash"
@@ -3470,20 +3416,6 @@ optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
 [[package]]
-name = "wheel"
-version = "0.40.0"
-description = "A built-package format for Python"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "wheel-0.40.0-py3-none-any.whl", hash = "sha256:d236b20e7cb522daf2390fa84c55eea81c5c30190f90f29ae2ca1ad8355bf247"},
-    {file = "wheel-0.40.0.tar.gz", hash = "sha256:cd1196f3faee2b31968d626e1731c94f99cbdb67cf5a46e4f5656cbee7738873"},
-]
-
-[package.extras]
-test = ["pytest (>=6.0.0)"]
-
-[[package]]
 name = "widgetsnbextension"
 version = "4.0.7"
 description = "Jupyter interactive widgets for Jupyter Notebook"
@@ -3678,4 +3610,4 @@ test = ["mypy", "pre-commit", "pytest", "pytest-asyncio", "websockets (>=10.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11,!=3.11.0"
-content-hash = "da57e14a57aeff3d9a1d3829232b8dff7da5d899ca7c4972b9c8e74bfb0721ae"
+content-hash = "0694a43e5ab4020ccb5d212f1f73bfe5a5e9511ecfb0c20001d6c172cbb492cf"
