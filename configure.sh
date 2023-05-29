@@ -1,7 +1,6 @@
 #!/usr/bin/bash
 # set executeable files
-if [ -d ".git" ]
-then
+if [ -d ".git" ]; then
   git ls-files | xargs chmod -x
 else
   find . -type f -executable -exec chmod -x {} +
@@ -11,8 +10,7 @@ chmod +x src/train.py ./configure.sh
 sudo apt update -qq
 sudo apt install -qqy python3.11 dos2unix
 # set correct line ending
-if [ -d ".git" ]
-then
+if [ -d ".git" ]; then
   git ls-files | xargs dos2unix
 else
   find . -type f -exec dos2unix {} +
@@ -21,6 +19,10 @@ fi
 curl -sSL https://install.python-poetry.org | python3 -
 poetry env use python3.11
 poetry install
+if [[ $(nvcc --version) != *11.7* ]]; then
+  poetry run pip uninstall -y torch torchvision torchaudio
+  poetry run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+fi
 # setup needed libraries
 poetry run wandb login "$(cat wandb_api_key.secret)"
 poetry run jupytext --to ipynb src/explore_model.py
