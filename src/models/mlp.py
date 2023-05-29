@@ -1,6 +1,5 @@
 # https://github.com/rubentea16/pl-mnist/blob/master/model.py
 # https://docs.ray.io/en/latest/tune/examples/includes/mnist_ptl_mini.html
-import torch
 import torch.nn.functional as F  # noqa: N812
 from torch import nn
 
@@ -58,42 +57,3 @@ class MultiLayerPerceptron(base.ImageClassifier):
         x = F.log_softmax(x, dim=1)
         assert x.shape == (batch_size, self.num_classes)
         return x
-
-
-class MultiLayerPerceptronAdam(MultiLayerPerceptron):
-    def __init__(
-        self,
-        hidden_size_1=128,
-        hidden_size_2=256,
-        image_size=28,
-        num_channels=3,
-        num_classes=10,
-        **kwargs,
-    ):
-        # optimizer
-        optimizer_cls = torch.optim.Adam
-        optimizer_argnames = ["lr"]
-        # scheduler
-        scheduler_cls = torch.optim.lr_scheduler.ExponentialLR
-        scheduler_argnames = ["gamma"]
-        scheduler_interval = "epoch"
-        scheduler_add_total_steps = False
-
-        optimizer_kwargs = {k: kwargs.pop(k) for k in optimizer_argnames if k in kwargs}
-        scheduler_kwargs = {k: kwargs.pop(k) for k in scheduler_argnames if k in kwargs}
-        if kwargs:
-            raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
-
-        super().__init__(
-            image_size=image_size,
-            num_channels=num_channels,
-            num_classes=num_classes,
-            hidden_size_1=hidden_size_1,
-            hidden_size_2=hidden_size_2,
-            optimizer_cls=optimizer_cls,
-            optimizer_kwargs=optimizer_kwargs,
-            scheduler_cls=scheduler_cls,
-            scheduler_kwargs=scheduler_kwargs,
-            scheduler_interval=scheduler_interval,
-            scheduler_add_total_steps=scheduler_add_total_steps,
-        )

@@ -1,4 +1,3 @@
-import torch
 import torch.nn.functional as F  # noqa: N812
 import torchvision
 from torch import nn
@@ -46,32 +45,3 @@ class Resnet(base.ImageClassifier):
         x = F.log_softmax(x, dim=1)
         assert x.shape == (batch_size, self.num_classes)
         return x
-
-
-class ResnetSGD(Resnet):
-    def __init__(self, image_size=28, num_channels=3, num_classes=10, **kwargs):
-        # optimizer
-        optimizer_cls = torch.optim.SGD
-        optimizer_argnames = ["lr", "momentum", "weight_decay"]
-        # scheduler
-        scheduler_cls = torch.optim.lr_scheduler.OneCycleLR
-        scheduler_argnames = ["max_lr"]
-        scheduler_interval = "step"
-        scheduler_add_total_steps = True
-
-        optimizer_kwargs = {k: kwargs.pop(k) for k in optimizer_argnames if k in kwargs}
-        scheduler_kwargs = {k: kwargs.pop(k) for k in scheduler_argnames if k in kwargs}
-        if kwargs:
-            raise TypeError(f"Unexpected keywords {list(kwargs.keys())}")
-
-        super().__init__(
-            image_size=image_size,
-            num_channels=num_channels,
-            num_classes=num_classes,
-            optimizer_cls=optimizer_cls,
-            optimizer_kwargs=optimizer_kwargs,
-            scheduler_cls=scheduler_cls,
-            scheduler_kwargs=scheduler_kwargs,
-            scheduler_interval=scheduler_interval,
-            scheduler_add_total_steps=scheduler_add_total_steps,
-        )
