@@ -56,7 +56,7 @@ def get_model(num_channels):
         # # SGD
         # optimizer_cls=torch.optim.SGD,
         # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
-        # AdamW
+        # # AdamW
         optimizer_cls=torch.optim.AdamW,
         optimizer_kwargs=dict(lr=0.01),
         # # ReduceLROnPlateau
@@ -69,7 +69,7 @@ def get_model(num_channels):
         # scheduler_cls=torch.optim.lr_scheduler.LambdaLR,
         # scheduler_kwargs=dict(lr_lambda=lambda step: min(0.01, (step+1e-8)**-0.5)),
         # scheduler_interval="step",
-        # OneCycleLR
+        # # OneCycleLR
         # scheduler_cls=torch.optim.lr_scheduler.OneCycleLR,
         # scheduler_kwargs=dict(max_lr=0.1),
         # scheduler_interval="step",
@@ -77,7 +77,7 @@ def get_model(num_channels):
         # # Adam
         # optimizer_cls=torch.optim.Adam,
         # optimizer_kwargs=dict(lr=0.05),
-        # ExponentialLR
+        # # ExponentialLR
         scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
         scheduler_kwargs=dict(gamma=0.95),
         scheduler_interval="epoch",
@@ -115,7 +115,6 @@ def train(seed):
     trainer.fit(model, datamodule=datamodule)
     t_total = time.time() - t_start
     trainer.logger.log_metrics({"trainer/total_time": t_total})
-    print(f"Training took {t_total:.2f} seconds", flush=True)
     trainer.test(model, datamodule=datamodule)
 
 
