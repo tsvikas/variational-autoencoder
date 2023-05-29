@@ -30,7 +30,7 @@ def get_logger(project_name: str):
 
 def get_datamodule():
     return datamodules.ImagesDataModule(
-        # see torchvision.datasets for options
+        # see torchvision.datasets for available datasets
         "FashionMNIST",
         num_channels=1,
         num_classes=10,
@@ -43,16 +43,9 @@ def get_datamodule():
     )
 
 
-def train(seed):
-    # set seed
-    seed = seed_everything(seed)
-
-    # set data
-    datamodule = get_datamodule()
-
-    # set model
-    model = models.FullyConnectedAutoEncoder(
-        num_channels=datamodule.num_channels,
+def get_model(num_channels):
+    return models.FullyConnectedAutoEncoder(
+        num_channels=num_channels,
         hidden_sizes=(256, 64, 8),
         encoder_last_layer=torch.nn.LayerNorm,
         encoder_last_layer_args=(8,),
@@ -88,14 +81,18 @@ def train(seed):
         scheduler_interval="epoch",
         scheduler_add_total_steps=False,
     )
-    torch.set_float32_matmul_precision("medium")
 
-    # set logger(s)
+
+def train(seed):
+    seed = seed_everything(seed)
+    datamodule = get_datamodule()
+    model = get_model(datamodule.num_channels)
     logger = get_logger(
         project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
     )
 
     # set trainer
+    torch.set_float32_matmul_precision("medium")
     trainer = Trainer(
         max_epochs=30,
         logger=logger,
@@ -109,6 +106,8 @@ def train(seed):
         enable_model_summary=False,
     )
     trainer.logger.log_hyperparams({"seed": seed})
+
+    # run trainer
     trainer.test(model, datamodule=datamodule, verbose=False)
     trainer.fit(model, datamodule=datamodule)
     trainer.test(model, datamodule=datamodule)
