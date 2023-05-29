@@ -114,6 +114,7 @@ def train(seed):
     t_start = time.time()
     trainer.fit(model, datamodule=datamodule)
     t_total = time.time() - t_start
+    trainer.logger.log_metrics({"trainer/total_time": t_total})
     print(f"Training took {t_total:.2f} seconds", flush=True)
     trainer.test(model, datamodule=datamodule)
 
