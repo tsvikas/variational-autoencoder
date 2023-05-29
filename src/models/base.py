@@ -7,6 +7,10 @@ from torchmetrics.functional.classification import multiclass_accuracy
 
 
 class SimpleLightningModule(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.total_examples = 0
+
     @classmethod
     def load_latest_checkpoint(cls, base_dir: Path, **kwargs):
         all_checkpoints = sorted(
@@ -27,7 +31,10 @@ class SimpleLightningModule(pl.LightningModule):
         raise NotImplementedError
 
     def training_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx, "training")
+        loss = self.step(batch, batch_idx, "training")
+        self.total_examples += len(batch[0])
+        self.log("trainer/total_examples", float(self.total_examples))
+        return loss
 
     def validation_step(self, batch, batch_idx):
         self.step(batch, batch_idx, "validation", evaluate=True)
