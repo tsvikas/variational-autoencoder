@@ -11,17 +11,19 @@ sudo apt update -qq
 sudo apt install -qqy python3.11 dos2unix
 # set correct line ending
 if [ -d ".git" ]; then
-  git ls-files | xargs dos2unix
+  git ls-files | xargs dos2unix -q
 else
-  find . -type f -exec dos2unix {} +
+  find . -type f -exec dos2unix -q {} +
 fi
 # install poetry and venv
 curl -sSL https://install.python-poetry.org | python3 -
-if [[ $(nvcc --version) != *11.7* ]]; then
-  poetry source add -p explicit pytorch https://download.pytorch.org/whl/cu118
-fi
 poetry env use python3.11
 poetry install
+if [[ $(nvcc --version) != *11.7* ]]; then
+  poetry run pip uninstall -qy torch torchvision
+  poetry run pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cu118
+  poetry source add -p explicit pytorch https://download.pytorch.org/whl/cu118
+fi
 # setup needed libraries
 poetry run wandb login "$(cat wandb_api_key.secret)"
 poetry run jupytext --to ipynb src/explore_model.py
