@@ -193,7 +193,7 @@ class AutoEncoder(LightningModuleWithScheduler):
         assert x2.shape == x.shape
         loss = F.mse_loss(x2, target)
         self.log(f"loss/{stage}", loss, prog_bar=evaluate)
-        if stage == "validation":
+        if stage == "validation" and self.logger:
             assert torch.equal(x, target)
             if self.global_step == 0 and batch_idx == 0:
                 self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
