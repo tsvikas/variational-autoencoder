@@ -42,18 +42,13 @@ def get_datamodule():
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(28, padding=4),
         ],
-        train_tensor_transforms=[
-            transforms.RandomErasing(),
-        ],
         eval_transforms=[
             transforms.RandomHorizontalFlip(),
             transforms.RandomCrop(28, padding=4),
         ],
-        eval_tensor_transforms=[
-            transforms.RandomErasing(),
-        ],
         target_is_self=True,
         noise_transforms=[
+            transforms.RandomErasing(),
             transforms.RandomApply([noise.GaussianNoise(0.1)], p=0.5),
             transforms.RandomApply([noise.SaltPepperNoise(0.1, 0.1)], p=0.5),
         ],
