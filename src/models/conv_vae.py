@@ -159,6 +159,7 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         self.encoder = encoder_class(num_input_channels, base_channel_size, latent_dim)
         self.decoder = decoder_class(num_input_channels, base_channel_size, latent_dim)
 
+        self.latent_dim = latent_dim
         self.num_input_channels = num_input_channels
         self.width = width
         self.height = height
