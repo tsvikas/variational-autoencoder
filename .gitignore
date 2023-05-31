@@ -6,4 +6,4 @@ TODO
 .ipynb_checkpoints/
 *.ipynb
 .idea/
-
+.jupyter_ystore.db
