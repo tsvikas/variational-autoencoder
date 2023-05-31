@@ -110,7 +110,7 @@ def show_from_latent(**inputs):
     data = torch.tensor(list(inputs.values()))
     data = data.view(1, -1).to(DEVICE)
     result = model.decoder(data)[0]
-    show_tensors(result, normalize=False)
+    show_tensors(result, normalize=True)
     plt.show()
 
 
