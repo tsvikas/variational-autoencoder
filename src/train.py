@@ -39,12 +39,12 @@ def get_datamodule():
         batch_size=2048,
         num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
         train_transforms=[
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(28, padding=4),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomCrop(28, padding=4),
         ],
         eval_transforms=[
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(28, padding=4),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomCrop(28, padding=4),
         ],
         target_is_self=True,
         noise_transforms=[
