@@ -38,21 +38,24 @@ def get_datamodule():
         num_classes=10,
         batch_size=2048,
         num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
-        train_transforms=[transforms.CenterCrop(28)],
-        eval_transforms=[transforms.CenterCrop(28)],
+        train_transforms=[transforms.Pad(2)],
+        eval_transforms=[transforms.Pad(2)],
         target_is_self=True,
         noise_transforms=[noise.GaussianNoise(0.1), noise.SaltPepperNoise(0.1, 0.1)],
     )
 
 
 def get_model(num_channels):
-    return models.FullyConnectedAutoEncoder(
+    return models.ResidualAutoencoder(
+        bottleneck=8,
+        image_size=32,
         num_channels=num_channels,
-        hidden_sizes=(256, 64, 8),
-        encoder_last_layer=torch.nn.LayerNorm,
-        encoder_last_layer_args=(8,),
-        decoder_last_layer=torch.nn.Identity,
-        decoder_last_layer_args=(),
+        # # FullyConnectedAutoEncoder
+        # hidden_sizes=(256, 64, 8),
+        # encoder_last_layer=torch.nn.LayerNorm,
+        # encoder_last_layer_args=(8,),
+        # decoder_last_layer=torch.nn.Identity,
+        # decoder_last_layer_args=(),
         # # SGD
         # optimizer_cls=torch.optim.SGD,
         # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
