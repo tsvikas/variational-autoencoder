@@ -36,8 +36,8 @@ def get_datamodule():
         "FashionMNIST",
         num_channels=1,
         num_classes=10,
-        batch_size=512 if torch.cuda.is_available() else 64,
-        num_workers=os.cpu_count() - 1,
+        batch_size=2048,
+        num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
         train_transforms=[transforms.CenterCrop(28)],
         eval_transforms=[transforms.CenterCrop(28)],
         target_is_self=True,
@@ -100,11 +100,13 @@ def train(seed):
     ]
 
     # set precision
-    torch.set_float32_matmul_precision("medium")
-    precision = "bf16-mixed"
+    # torch.set_float32_matmul_precision("medium")
+    # precision = "bf16-mixed"
+    precision = 16
 
     # fast_dev_run, to prevent logging of failed runs
     trainer_fast = Trainer(
+        accelerator="auto",
         fast_dev_run=True,
         enable_model_summary=False,
         enable_progress_bar=False,
@@ -114,6 +116,7 @@ def train(seed):
 
     # set trainer
     trainer = Trainer(
+        accelerator="auto",
         max_epochs=max_epochs,
         logger=logger,
         callbacks=[
@@ -124,6 +127,7 @@ def train(seed):
         ],
         precision=precision,
         enable_model_summary=False,
+        log_every_n_steps=5,
     )
     trainer.logger.log_hyperparams({"seed": seed})
 
