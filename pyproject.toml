@@ -8,12 +8,14 @@ authors = ["Tsvika S <tsvikas@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.11,!=3.11.0"
-torch = {version = "^2.0.0", source = "pytorch"}
-torchvision = {version = "^0.15.1", source = "pytorch"}
+#torch = {version = "^2.0.0", source = "pytorch"}
+#torchvision = {version = "^0.15.1", source = "pytorch"}
 pytorch-lightning = "^2.0.2"
 wandb = "^0.15.2"
 rich = "^13.3.5"
 einops = "^0.6.1"
+torch = "^2.0.1"
+torchvision = "^0.15.2"
 
 [tool.poetry.group.jupyter.dependencies]
 jupyterlab = "^4.0.0"
