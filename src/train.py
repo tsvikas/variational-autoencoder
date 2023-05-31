@@ -89,9 +89,6 @@ def train(seed):
     seed = seed_everything(seed)
     datamodule = get_datamodule()
     model = get_model(datamodule.num_channels)
-    logger = get_logger(
-        project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
-    )
 
     # trainer settings
     max_epochs = 30
@@ -111,10 +108,14 @@ def train(seed):
         enable_model_summary=False,
         enable_progress_bar=False,
         precision=precision,
+        logger=False,
     )
     trainer_fast.fit(model, datamodule=datamodule)
 
     # set trainer
+    logger = get_logger(
+        project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
+    )
     trainer = Trainer(
         accelerator="auto",
         max_epochs=max_epochs,
