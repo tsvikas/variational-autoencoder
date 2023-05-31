@@ -26,29 +26,39 @@ def conv3x3(
         out_planes,
         kernel_size=3,
         stride=stride,
-        padding=dilation,
+        padding=1,
         groups=groups,
         bias=False,
         dilation=dilation,
     )
 
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1, **_kw) -> nn.Conv2d:
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
 def transposed_conv1x1(
-    in_planes: int, out_planes: int, stride: int = 1
+    in_planes: int, out_planes: int, stride: int = 1, output_padding: int = 0
 ) -> nn.ConvTranspose2d:
     """1x1 transposed convolution"""
     return nn.ConvTranspose2d(
-        in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+        in_planes,
+        out_planes,
+        kernel_size=1,
+        stride=stride,
+        bias=False,
+        output_padding=output_padding,
     )
 
 
 def transposed_conv3x3(
-    in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
+    in_planes: int,
+    out_planes: int,
+    stride: int = 1,
+    groups: int = 1,
+    dilation: int = 1,
+    output_padding: int = 1,
 ) -> nn.ConvTranspose2d:
     """3x3 convolution with padding"""
     return nn.ConvTranspose2d(
@@ -56,7 +66,8 @@ def transposed_conv3x3(
         out_planes,
         kernel_size=3,
         stride=stride,
-        padding=dilation,
+        padding=1,
+        output_padding=output_padding,
         groups=groups,
         bias=False,
         dilation=dilation,
@@ -76,6 +87,7 @@ class BasicBlock(nn.Module):
         base_width: int = 64,
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,  # noqa: UP007
+        output_padding: int = 1,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -86,7 +98,9 @@ class BasicBlock(nn.Module):
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         if inplanes > planes:
-            self.conv1 = transposed_conv3x3(inplanes, planes, stride)
+            self.conv1 = transposed_conv3x3(
+                inplanes, planes, stride, output_padding=output_padding
+            )
         else:
             self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
@@ -122,15 +136,19 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         self.dilation = 1
         self.inplanes = 4
         self.conv1 = nn.Conv2d(
-            1, self.inplanes, kernel_size=3, stride=1, padding=3, bias=False
+            1, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False
         )
         self.layer1 = self._make_layer(4, layers[0])
         self.layer2 = self._make_layer(8, layers[1], stride=2)
         self.layer3 = self._make_layer(16, layers[2], stride=2)
         self.bottleneck = nn.Linear(1024, bottleneck)
         self.decode_bottleneck = nn.Linear(bottleneck, 1024)
-        self.layer3_ = self._make_layer_(8, layers[2], stride=2)
-        self.layer2_ = self._make_layer_(4, layers[1], stride=2)
+        self.layer3_ = self._make_layer_(
+            8, layers[2], stride=2, output_padding=1, downsample_output_padding=1
+        )
+        self.layer2_ = self._make_layer_(
+            4, layers[1], stride=2, output_padding=1, downsample_output_padding=1
+        )
         self.layer1_ = self._make_layer_(2, layers[1])
         self.tconv1 = nn.ConvTranspose2d(
             self.inplanes, 1, kernel_size=1, stride=1, padding=0, bias=False
@@ -141,13 +159,20 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         planes: int,
         blocks: int,
         stride: int = 1,
+        downsample_output_padding: int = 0,
+        output_padding: int = 0,
         resample: Callable = conv1x1,
     ) -> nn.Sequential:
         downsample = None
         previous_dilation = self.dilation
         if stride != 1 or self.inplanes != planes:
             downsample = nn.Sequential(
-                resample(self.inplanes, planes, stride),
+                resample(
+                    self.inplanes,
+                    planes,
+                    stride,
+                    output_padding=downsample_output_padding,
+                ),
                 nn.BatchNorm2d(planes),
             )
 
@@ -162,6 +187,7 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
                 64,
                 previous_dilation,
                 nn.BatchNorm2d,
+                output_padding=output_padding,
             )
         )
         self.inplanes = planes
@@ -174,6 +200,7 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
                     base_width=64,
                     dilation=self.dilation,
                     norm_layer=nn.BatchNorm2d,
+                    output_padding=output_padding,
                 )
             )
 
@@ -184,21 +211,26 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         planes: int,
         blocks: int,
         stride: int = 1,
+        output_padding: int = 0,
+        downsample_output_padding: int = 0,
     ) -> nn.Sequential:
-        return self._make_layer(planes, blocks, stride, resample=transposed_conv1x1)
+        return self._make_layer(
+            planes,
+            blocks,
+            stride,
+            resample=transposed_conv1x1,
+            output_padding=output_padding,
+            downsample_output_padding=downsample_output_padding,
+        )
 
     def forward(self, x):
         shape = x.shape
 
         x = self.conv1(x)
 
-        print(x.shape)
         x = self.layer1(x)
-        print(x.shape)
         x = self.layer2(x)
-        print(x.shape)
         x = self.layer3(x)
-        print(x.shape)
 
         image_shape = x.shape
         x = x.reshape(shape[0], -1)
@@ -206,13 +238,9 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         x = self.decode_bottleneck(x)
         x = x.reshape(image_shape)
 
-        print(x.shape)
         x = self.layer3_(x)
-        print(x.shape)
         x = self.layer2_(x)
-        print(x.shape)
         x = self.layer1_(x)
-        print(x.shape)
 
         x = self.tconv1(x)
 
