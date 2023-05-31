@@ -47,8 +47,9 @@ def get_datamodule():
 
 def get_model(num_channels):
     return models.ConvAutoencoder(
-        latent_dim=16,
+        latent_dim=8,
         image_size=28,
+        latent_noise=0.1,
         num_channels=num_channels,
         # # FullyConnectedAutoEncoder
         # hidden_sizes=(256, 64, 8),

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+import torch
 import torch.nn as nn
 from einops.layers.torch import Rearrange
 
@@ -13,6 +14,7 @@ class Encoder(nn.Module):
         base_channel_size: int,
         latent_dim: int,
         act_fn: Callable = nn.functional.gelu,
+        latent_act_fn: type[nn.Module] = nn.Tanh,
     ):
         """
         Args:
@@ -39,7 +41,9 @@ class Encoder(nn.Module):
         self.conv5 = nn.Conv2d(2 * c_hid, 2 * c_hid, kernel_size=3, padding=1, stride=2)
 
         self.flatten = nn.Flatten()
+        self.ln = nn.LayerNorm(2 * 16 * c_hid)
         self.linear = nn.Linear(2 * 16 * c_hid, latent_dim)
+        self.latent_act = latent_act_fn()
 
     def forward(self, x):
         x = self.act(self.conv1(x))
@@ -48,7 +52,9 @@ class Encoder(nn.Module):
         x = self.act(self.conv4(x))
         x = self.act(self.conv5(x))
         x = self.flatten(x)
+        x = self.ln(x)
         x = self.linear(x)
+        x = self.latent_act(x)
         return x
 
 
@@ -71,6 +77,7 @@ class Decoder(nn.Module):
         super().__init__()
         c_hid = base_channel_size
         self.linear = nn.Linear(latent_dim, 2 * 16 * c_hid)
+        self.ln = nn.LayerNorm(2 * 16 * c_hid, elementwise_affine=True)
         self.reshape = Rearrange("b (c h w) -> b c h w", h=4, w=4)
         self.act = act_fn
 
@@ -119,6 +126,7 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = self.act(self.linear(x))
+        x = self.ln(x)
         x = self.reshape(x)
         x = self.act(self.convt1(x))
         x = self.act(self.conv1(x))
@@ -142,6 +150,7 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         num_input_channels: int = 1,
         width: int = 28,
         height: int = 28,
+        latent_noise: float = 0.0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -150,13 +159,17 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         self.encoder = encoder_class(num_input_channels, base_channel_size, latent_dim)
         self.decoder = decoder_class(num_input_channels, base_channel_size, latent_dim)
 
+        self.num_input_channels = num_input_channels
         self.width = width
         self.height = height
-        self.num_input_channels = num_input_channels
+        self.latent_noise = latent_noise
 
     def forward(self, x):
         """The forward function takes in an image and returns the reconstructed image."""
         z = self.encoder(x)
+        if self.training and self.latent_noise > 0.0:
+            # Add some noise to the latent representation
+            z = z + torch.randn_like(z) * self.latent_noise
         # z is the latent representation
         x_hat = self.decoder(z)
         return x_hat
