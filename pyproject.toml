@@ -51,6 +51,7 @@ ignore = [
     "C408",
     "TRY003",
     "FBT002",
+    "PLW2901",
 ]
 src = ["src"]
 

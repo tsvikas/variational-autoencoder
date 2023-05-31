@@ -270,7 +270,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25):
 
             # Iterate over data.
             for inputs, labels in tqdm(dataloaders[phase]):
-                labels = labels.to(device)  # noqa: PLW2901
+                labels = labels.to(device)
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
