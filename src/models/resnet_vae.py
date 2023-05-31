@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import wandb
 
-from src.models import base
+from . import base
 
 
 def conv3x3(
