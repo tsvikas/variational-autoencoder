@@ -197,6 +197,10 @@ class AutoEncoder(LightningModuleWithScheduler):
             assert torch.equal(x, target)
             if self.global_step == 0 and batch_idx == 0:
                 self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
+            if self.global_step == 0 and batch_idx == 0:
+                self.logger.log_image(
+                    "image/target", list(target[: self.n_images_to_save])
+                )
             if batch_idx == 0:
                 self.logger.log_image("image/pred", list(x2[: self.n_images_to_save]))
         return loss
