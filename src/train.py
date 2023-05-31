@@ -47,7 +47,7 @@ def get_datamodule():
 
 def get_model(num_channels):
     return models.ConvAutoencoder(
-        latent_dim=8,
+        latent_dim=16,
         image_size=28,
         num_channels=num_channels,
         # # FullyConnectedAutoEncoder
@@ -81,10 +81,10 @@ def get_model(num_channels):
         # optimizer_cls=torch.optim.Adam,
         # optimizer_kwargs=dict(lr=0.05),
         # # ExponentialLR
-        scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-        scheduler_kwargs=dict(gamma=0.95),
-        scheduler_interval="epoch",
-        scheduler_add_total_steps=False,
+        # scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+        # scheduler_kwargs=dict(gamma=0.95),
+        # scheduler_interval="epoch",
+        # scheduler_add_total_steps=False,
     )
 
 
@@ -94,7 +94,7 @@ def train(seed):
     model = get_model(datamodule.num_channels)
 
     # trainer settings
-    max_epochs = 15
+    max_epochs = 30
     trainer_callbacks = [
         callbacks.EarlyStopping("loss/validation", min_delta=0.001),
     ]
