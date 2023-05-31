@@ -56,6 +56,7 @@ src = ["src"]
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
 "src/train.py" = ["INP001", "T201"]
+"src/models/resnet_vae.py" = ["T201", "PD002"]
 "src/explore_model.py" = [
     "INP001",
     "E703",
