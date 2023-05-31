@@ -57,7 +57,7 @@ def transposed_conv3x3(
     out_planes: int,
     stride: int = 1,
     groups: int = 1,
-    dilation: int = 1,
+    _dilation: int = 1,
     output_padding: int = 1,
 ) -> nn.ConvTranspose2d:
     """3x3 convolution with padding"""
@@ -70,7 +70,7 @@ def transposed_conv3x3(
         output_padding=output_padding,
         groups=groups,
         bias=False,
-        dilation=dilation,
+        # dilation=dilation,
     )
 
 
@@ -149,10 +149,10 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         self.layer2_ = self._make_layer_(
             4, layers[1], stride=2, output_padding=1, downsample_output_padding=1
         )
-        self.layer1_ = self._make_layer_(2, layers[1])
-        self.tconv1 = nn.ConvTranspose2d(
-            self.inplanes, 1, kernel_size=1, stride=1, padding=0, bias=False
-        )
+        self.layer1_ = self._make_layer_(1, layers[1])
+        # self.tconv1 = nn.ConvTranspose2d(
+        #     self.inplanes, 1, kernel_size=1, stride=1, padding=0, bias=False
+        # )
 
     def _make_layer(
         self,
@@ -242,7 +242,7 @@ class ResidualAutoencoder(base.ImageAutoEncoder):
         x = self.layer2_(x)
         x = self.layer1_(x)
 
-        x = self.tconv1(x)
+        # x = self.tconv1(x)
 
         assert shape == x.shape, (shape, x.shape)
         return x

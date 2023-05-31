@@ -38,17 +38,17 @@ def get_datamodule():
         num_classes=10,
         batch_size=2048,
         num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
-        train_transforms=[transforms.Pad(2)],
-        eval_transforms=[transforms.Pad(2)],
+        train_transforms=[transforms.CenterCrop(28)],
+        eval_transforms=[transforms.CenterCrop(28)],
         target_is_self=True,
         noise_transforms=[noise.GaussianNoise(0.1), noise.SaltPepperNoise(0.1, 0.1)],
     )
 
 
 def get_model(num_channels):
-    return models.ResidualAutoencoder(
-        bottleneck=8,
-        image_size=32,
+    return models.ConvAutoencoder(
+        latent_dim=8,
+        image_size=28,
         num_channels=num_channels,
         # # FullyConnectedAutoEncoder
         # hidden_sizes=(256, 64, 8),
@@ -94,7 +94,7 @@ def train(seed):
     model = get_model(datamodule.num_channels)
 
     # trainer settings
-    max_epochs = 30
+    max_epochs = 15
     trainer_callbacks = [
         callbacks.EarlyStopping("loss/validation", min_delta=0.001),
     ]
