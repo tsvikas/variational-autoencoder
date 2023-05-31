@@ -7,3 +7,4 @@ TODO
 *.ipynb
 .idea/
 .jupyter_ystore.db
+.virtual_documents/
