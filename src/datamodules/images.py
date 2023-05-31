@@ -59,7 +59,9 @@ class ImagesDataModule(LightningDataModule):
         batch_size: int = 1,
         data_dir: str | Path = DATA_DIR,
         train_transforms: list[torch.nn.Module] | None = None,
+        train_tensor_transforms: list[torch.nn.Module] | None = None,
         eval_transforms: list[torch.nn.Module] | None = None,
+        eval_tensor_transforms: list[torch.nn.Module] | None = None,
         num_workers: int = 1,
         val_size_or_frac: int | float = 0.2,
         target_is_self=False,
@@ -79,7 +81,9 @@ class ImagesDataModule(LightningDataModule):
         self.batch_size = int(batch_size)
         self.data_dir = Path(data_dir).as_posix()
         self.train_transforms = train_transforms or []
+        self.train_tensor_transforms = train_tensor_transforms or []
         self.eval_transforms = eval_transforms or []
+        self.eval_tensor_transforms = eval_tensor_transforms or []
         self.num_workers = num_workers
         self.val_size_or_frac = val_size_or_frac
         self.target_is_self = target_is_self
@@ -132,16 +136,19 @@ class ImagesDataModule(LightningDataModule):
             *self.train_transforms,
             torchvision.transforms.ToTensor(),
             self.normalize_transform,
+            *self.train_tensor_transforms,
         ]
         val_transforms = [
             *self.eval_transforms,
             torchvision.transforms.ToTensor(),
             self.normalize_transform,
+            *self.eval_tensor_transforms,
         ]
         test_transforms = [
             *self.eval_transforms,
             torchvision.transforms.ToTensor(),
             self.normalize_transform,
+            *self.eval_tensor_transforms,
         ]
 
         # create dataset
@@ -165,8 +172,12 @@ class ImagesDataModule(LightningDataModule):
             self.train_set = TransformedSelfDataset(
                 self.train_set, transforms=self.noise_transforms
             )
-            self.val_set = TransformedSelfDataset(self.val_set)
-            self.test_set = TransformedSelfDataset(self.test_set)
+            self.val_set = TransformedSelfDataset(
+                self.val_set, transforms=self.noise_transforms
+            )
+            self.test_set = TransformedSelfDataset(
+                self.test_set, transforms=self.noise_transforms
+            )
 
         # verify num_classes and num_channels
         if (num_classes := len(self.test_set.classes)) != self.num_classes:

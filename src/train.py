@@ -38,10 +38,25 @@ def get_datamodule():
         num_classes=10,
         batch_size=2048,
         num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
-        train_transforms=[transforms.CenterCrop(28)],
-        eval_transforms=[transforms.CenterCrop(28)],
+        train_transforms=[
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(28, padding=4),
+        ],
+        train_tensor_transforms=[
+            transforms.RandomErasing(),
+        ],
+        eval_transforms=[
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(28, padding=4),
+        ],
+        eval_tensor_transforms=[
+            transforms.RandomErasing(),
+        ],
         target_is_self=True,
-        noise_transforms=[noise.GaussianNoise(0.1), noise.SaltPepperNoise(0.1, 0.1)],
+        noise_transforms=[
+            transforms.RandomApply([noise.GaussianNoise(0.1)], p=0.5),
+            transforms.RandomApply([noise.SaltPepperNoise(0.1, 0.1)], p=0.5),
+        ],
     )
 
 
