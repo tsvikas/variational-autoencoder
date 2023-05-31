@@ -14,6 +14,8 @@ from tqdm import tqdm
 
 import wandb
 
+from src.models import base
+
 
 def conv3x3(
     in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
@@ -113,9 +115,10 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Autoencoder(nn.Module):
-    def __init__(self, bottleneck, layers=[2, 2, 2, 2]):  # noqa: B006
-        super().__init__()
+class ResidualAutoencoder(base.ImageAutoEncoder):
+    def __init__(self, bottleneck, layers=[2, 2, 2, 2], **kw):  # noqa: B006
+        super().__init__(**kw)
+        self.save_hyperparameters()
         self.dilation = 1
         self.inplanes = 4
         self.conv1 = nn.Conv2d(
@@ -441,7 +444,7 @@ if __name__ == "__main__":
     model = model.to(device)
     """
     # wandb.init(config=args, save_code=True)
-    model = Autoencoder(16).to(device)
+    model = ResidualAutoencoder(16).to(device)
     print(model)
     criterion = torch.nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
