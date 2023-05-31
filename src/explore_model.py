@@ -32,7 +32,16 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 DEVICE = torch.device("mps") if torch.backends.mps.is_available() else DEVICE
 
 # %%
-ckpt_dir = LOGS_DIR / "convautoencoder-fashionmnist/convautoencoder-fashionmnist"
+ModelClass = models.ConvAutoencoder
+dataset_name = "FashionMNIST"
+datamodule = ImagesDataModule(dataset_name, 1, 10)
+
+# %%
+model_name = ModelClass.__name__.lower()
+ckpt_dir = (
+    LOGS_DIR
+    / f"{model_name}-{dataset_name.lower()}/{model_name}-{dataset_name.lower()}"
+)
 
 for p in ckpt_dir.parents[::-1] + (ckpt_dir,):
     if not p.exists():
@@ -59,14 +68,14 @@ display(all_ckpts)
 # torch.load(ckpt_dir/list(all_ckpts.values())[-1])['hyper_parameters']
 
 # %%
-model = models.ConvAutoencoder.load_latest_checkpoint(ckpt_dir, map_location=DEVICE)
+model = ModelClass.load_latest_checkpoint(ckpt_dir, map_location=DEVICE)
 model.eval()
 print(model.hparams)
 print(model)
 
 # %%
 x_rand = torch.rand(1, 1, 28, 28)
-image = ImagesDataModule("FashionMNIST", 1, 10).dataset()[0][0]
+image, _target = datamodule.dataset()[0]
 
 x_real = ToTensor()(image).unsqueeze(0)
 print(x_real.shape)
