@@ -26,6 +26,7 @@ python-lsp-server = "^1.7.3"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.1"
 ruff = "^0.0.264"
+black = "^23.3.0"
 
 [[tool.poetry.source]]
 name = "pytorch"
