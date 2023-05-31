@@ -73,15 +73,16 @@ print(x_real.shape)
 
 
 # %%
-def show_tensors(imgs: list[torch.Tensor]):
+def show_tensors(imgs: list[torch.Tensor], normalize=True):
     if not isinstance(imgs, list):
         imgs = [imgs]
     fig, axss = plt.subplots(ncols=len(imgs), squeeze=False)
     axs = axss[0]
     for i, img in enumerate(imgs):
-        img_normed = (img - img.min()) / (img.max() - img.min())
-        img_normed = img_normed.detach()
-        img_pil = to_pil_image(img_normed)
+        if normalize:
+            img = (img - img.min()) / (img.max() - img.min())
+        img = img.clamp(0, 1).detach()
+        img_pil = to_pil_image(img)
         axs[i].imshow(img_pil, cmap="gray", vmin=0, vmax=255)
         axs[i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
@@ -100,7 +101,7 @@ def show_from_latent(**inputs):
     data = torch.tensor(list(inputs.values()))
     data = data.view(1, -1).to(DEVICE)
     result = model.decoder(data)[0]
-    show_tensors(result)
+    show_tensors(result, normalize=False)
     plt.show()
 
 
