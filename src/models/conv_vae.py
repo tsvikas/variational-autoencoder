@@ -94,12 +94,28 @@ class Decoder(nn.Module):
         # 14x14 => 28x28
         self.convt3 = nn.ConvTranspose2d(
             c_hid,
-            num_input_channels,
+            c_hid,
             kernel_size=3,
             output_padding=1,
             padding=1,
             stride=2,
         )
+        self.conv3 = nn.Conv2d(c_hid, c_hid, kernel_size=3, padding=1)
+
+        # 28x28 => 56x56
+        self.convt4 = nn.ConvTranspose2d(
+            c_hid,
+            c_hid,
+            kernel_size=3,
+            output_padding=1,
+            padding=1,
+            stride=2,
+        )
+        self.conv4 = nn.Conv2d(
+            c_hid, num_input_channels, kernel_size=3, padding=1, stride=2
+        )
+
+        # self.conv4 = nn.Conv2d(num_input_channels, num_input_channels, kernel_size=3, padding=1)
 
     def forward(self, x):
         x = self.act(self.linear(x))
@@ -108,7 +124,10 @@ class Decoder(nn.Module):
         x = self.act(self.conv1(x))
         x = self.act(self.convt2(x))
         x = self.act(self.conv2(x))
-        x = self.convt3(x)
+        x = self.act(self.convt3(x))
+        x = self.act(self.conv3(x))
+        x = self.act(self.convt4(x))
+        x = self.conv4(x)
         return x
 
 
@@ -116,7 +135,7 @@ class Decoder(nn.Module):
 class ConvAutoencoder(base.ImageAutoEncoder):
     def __init__(
         self,
-        base_channel_size: int = 8,
+        base_channel_size: int = 6,
         latent_dim: int = 8,
         encoder_class: type[nn.Module] = Encoder,
         decoder_class: type[nn.Module] = Decoder,
