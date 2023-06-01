@@ -179,7 +179,7 @@ class Decoder(nn.Module):
 class ConvAutoencoder(base.ImageAutoEncoder):
     def __init__(
         self,
-        channels: tuple[int] = (16, 16, 16, 16),
+        channels: tuple[int, ...] = (16, 16, 16, 16),
         latent_dim: int = 8,
         encoder_class: type[nn.Module] = Encoder,
         decoder_class: type[nn.Module] = Decoder,
