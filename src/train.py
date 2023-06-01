@@ -130,7 +130,7 @@ def train(seed):
         precision=precision,
         logger=False,
         callbacks=[
-            callbacks.RichModelSummary(max_depth=2),
+            callbacks.RichModelSummary(max_depth=4),
         ],
     )
     trainer_fast.fit(model, datamodule=datamodule)
