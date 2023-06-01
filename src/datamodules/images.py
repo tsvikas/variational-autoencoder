@@ -225,6 +225,7 @@ class ImagesDataModule(LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
+            persistent_workers=True,
         )
 
     # we can use a x2 batch_size in validation and testing,
@@ -236,6 +237,7 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True,
+            persistent_workers=True,
         )
 
     def test_dataloader(self):
@@ -245,6 +247,7 @@ class ImagesDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True,
+            persistent_workers=True,
         )
 
 

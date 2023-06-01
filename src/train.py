@@ -37,7 +37,7 @@ def get_datamodule():
         num_channels=1,
         num_classes=10,
         batch_size=2048,
-        num_workers=0 if torch.backends.mps.is_available() else os.cpu_count() - 1,
+        num_workers=os.cpu_count() - 1,
         train_transforms=[
             # transforms.RandomHorizontalFlip(),
             # transforms.RandomCrop(28, padding=4),
