@@ -39,7 +39,7 @@ def get_datamodule():
         "FashionMNIST",
         num_channels=1,
         num_classes=10,
-        batch_size=2048,
+        batch_size=512,
         num_workers=os.cpu_count() - 1,
         train_transforms=[
             # transforms.RandomHorizontalFlip(),
