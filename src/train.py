@@ -2,6 +2,7 @@
 import os
 import tempfile
 import time
+import warnings
 from pathlib import Path
 
 import torch
@@ -13,6 +14,8 @@ import datamodules
 import models
 from datamodules import noise
 
+warnings.filterwarnings("ignore", ".*does not have many workers.*")
+warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
 LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
 
 
