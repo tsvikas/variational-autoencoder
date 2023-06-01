@@ -86,6 +86,7 @@ class Encoder(nn.Module):
         latent_dim: int,
         act_fn: nn.Module | Callable[[torch.Tensor], torch.Tensor] = nn.functional.gelu,
         latent_act_fn: type[nn.Module] = nn.Tanh,
+        first_kernel_size: int = 7,
     ):
         """
         Args:
@@ -100,8 +101,8 @@ class Encoder(nn.Module):
         self.conv = nn.Conv2d(
             num_input_channels,
             channels[0],
-            kernel_size=7,
-            padding=3,
+            kernel_size=first_kernel_size,
+            padding=first_kernel_size // 2,
             stride=1,
             bias=False,
         )
@@ -136,6 +137,7 @@ class Decoder(nn.Module):
         channels: tuple[int],
         latent_dim: int,
         act_fn: type[nn.Module] = nn.functional.gelu,
+        first_kernel_size: int = 7,
     ):
         """
         Args:
@@ -156,10 +158,11 @@ class Decoder(nn.Module):
         self.conv = nn.ConvTranspose2d(
             channels[0],
             num_input_channels,
-            kernel_size=3,
-            padding=1,
+            kernel_size=first_kernel_size,
+            padding=first_kernel_size // 2,
             stride=1,
             output_padding=0,
+            bias=False,
         )
 
     def forward(self, x):
@@ -176,7 +179,7 @@ class Decoder(nn.Module):
 class ConvAutoencoder(base.ImageAutoEncoder):
     def __init__(
         self,
-        channels: tuple[int] = (32, 16, 16, 16),
+        channels: tuple[int] = (16, 16, 16, 16),
         latent_dim: int = 8,
         encoder_class: type[nn.Module] = Encoder,
         decoder_class: type[nn.Module] = Decoder,
@@ -184,13 +187,18 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         width: int = 32,
         height: int = 32,
         latent_noise: float = 0.0,
+        first_kernel_size: int = 7,
         **kwargs,
     ):
         super().__init__(**kwargs, num_channels=num_channels)
         self.save_hyperparameters()
         # Creating encoder and decoder
-        self.encoder = encoder_class(num_channels, channels, latent_dim)
-        self.decoder = decoder_class(num_channels, channels, latent_dim)
+        self.encoder = encoder_class(
+            num_channels, channels, latent_dim, first_kernel_size=first_kernel_size
+        )
+        self.decoder = decoder_class(
+            num_channels, channels, latent_dim, first_kernel_size=first_kernel_size
+        )
 
         self.latent_dim = latent_dim
         self.num_input_channels = num_channels
