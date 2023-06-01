@@ -43,11 +43,11 @@ def get_datamodule():
         num_workers=os.cpu_count() - 1,
         train_transforms=[
             # transforms.RandomHorizontalFlip(),
-            # transforms.RandomCrop(28, padding=4),
+            transforms.CenterCrop(32),
         ],
         eval_transforms=[
             # transforms.RandomHorizontalFlip(),
-            # transforms.RandomCrop(28, padding=4),
+            transforms.CenterCrop(32),
         ],
         target_is_self=True,
         noise_transforms=[
@@ -61,7 +61,7 @@ def get_datamodule():
 def get_model(num_channels):
     return models.ConvAutoencoder(
         latent_dim=8,
-        image_size=28,
+        image_size=32,
         latent_noise=0.1,
         num_channels=num_channels,
         # # FullyConnectedAutoEncoder

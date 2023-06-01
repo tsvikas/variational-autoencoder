@@ -18,6 +18,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
+import torchvision.transforms.functional as TF  # noqa: N812
 from IPython.core.display_functions import display
 from ipywidgets import interact
 from torchvision.transforms import ToTensor
@@ -74,10 +75,12 @@ print(model.hparams)
 print(model)
 
 # %%
-x_rand = torch.rand(1, 1, 28, 28)
+x_rand = torch.rand(1, 1, 32, 32)
 image, _target = datamodule.dataset()[0]
 
 x_real = ToTensor()(image).unsqueeze(0)
+x_rand = TF.center_crop(x_rand, 32)
+x_real = TF.center_crop(x_real, 32)
 print(x_real.shape)
 
 
