@@ -16,6 +16,9 @@ from datamodules import noise
 
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
+warnings.filterwarnings(
+    "ignore", ".*is supported for historical reasons but its usage is discouraged.*"
+)
 LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
 
 
