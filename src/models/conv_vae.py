@@ -15,7 +15,7 @@ class DownBlock(nn.Module):
         act_fn: nn.Module | Callable[[torch.Tensor], torch.Tensor],
     ):
         super().__init__()
-        self.downsample = nn.Sequential(
+        self.shortcut = nn.Sequential(
             nn.AvgPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
             if in_channels != out_channels
@@ -30,7 +30,7 @@ class DownBlock(nn.Module):
         self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
-        residual = self.downsample(x)
+        residual = self.shortcut(x)
         x = self.act(self.conv1(x))
         x = self.act(self.conv2(x))
         x = self.bn(x)
@@ -47,7 +47,7 @@ class UpBlock(nn.Module):
         output_padding: int = 1,
     ):
         super().__init__()
-        self.upsample = nn.Sequential(
+        self.shortcut = nn.Sequential(
             nn.ConvTranspose2d(
                 in_channels, out_channels, kernel_size=1, stride=1, padding=0
             )
@@ -70,7 +70,7 @@ class UpBlock(nn.Module):
         self.act = act_fn
 
     def forward(self, x):
-        residual = self.upsample(x)
+        residual = self.shortcut(x)
         x = self.act(self.conv_t1(x))
         x = self.act(self.conv_t2(x))
         x = self.bn(x)
