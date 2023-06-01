@@ -52,8 +52,8 @@ def get_datamodule():
         target_is_self=True,
         noise_transforms=[
             transforms.RandomApply([transforms.RandomErasing()], p=0.5),
-            transforms.RandomApply([noise.SaltPepperNoise(0.1, 0.1)], p=0.5),
-            transforms.RandomApply([noise.GaussianNoise(0.1)], p=0.5),
+            transforms.RandomApply([noise.SaltPepperNoise(0.05, 0.05)], p=0.5),
+            transforms.RandomApply([noise.GaussianNoise(0.05)], p=0.5),
         ],
     )
 
