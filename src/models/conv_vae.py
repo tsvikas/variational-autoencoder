@@ -187,7 +187,7 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         width: int = 32,
         height: int = 32,
         latent_noise: float = 0.0,
-        first_kernel_size: int = 7,
+        first_kernel_size: int = 5,
         **kwargs,
     ):
         super().__init__(**kwargs, num_channels=num_channels)
