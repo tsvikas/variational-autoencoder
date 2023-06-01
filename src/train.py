@@ -113,7 +113,7 @@ def train(seed):
     # trainer settings
     max_epochs = 30
     trainer_callbacks = [
-        callbacks.EarlyStopping("loss/validation", min_delta=0.001),
+        callbacks.EarlyStopping("loss/validation", min_delta=0.0005),
     ]
 
     # set precision
