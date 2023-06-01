@@ -103,7 +103,7 @@ class Encoder(nn.Module):
             channels[0],
             kernel_size=first_kernel_size,
             padding=first_kernel_size // 2,
-            stride=1,
+            stride=2,
             bias=False,
         )
 
@@ -115,7 +115,7 @@ class Encoder(nn.Module):
         self.down3 = DownBlock(channels[2], channels[3], act_fn)
 
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(4 * 4 * channels[3], latent_dim)
+        self.linear = nn.Linear(2 * 2 * channels[3], latent_dim)
         self.latent_act = latent_act_fn()
 
     def forward(self, x):
@@ -148,8 +148,8 @@ class Decoder(nn.Module):
         """
         super().__init__()
 
-        self.linear = nn.Linear(latent_dim, 4 * 4 * channels[3])
-        self.reshape = Rearrange("b (c h w) -> b c h w", h=4, w=4)
+        self.linear = nn.Linear(latent_dim, 2 * 2 * channels[3])
+        self.reshape = Rearrange("b (c h w) -> b c h w", h=2, w=2)
         self.act = act_fn
 
         self.up1 = UpBlock(channels[3], channels[2], act_fn)
@@ -160,8 +160,8 @@ class Decoder(nn.Module):
             num_input_channels,
             kernel_size=first_kernel_size,
             padding=first_kernel_size // 2,
-            stride=1,
-            output_padding=0,
+            stride=2,
+            output_padding=1,
             bias=False,
         )
 
