@@ -100,7 +100,7 @@ def show_tensors(imgs: list[torch.Tensor], normalize=True):
 
 
 for x in [x_rand, x_real]:
-    show_tensors([x[0], model(x.to(DEVICE))[0]])
+    show_tensors([x[0], model(x.to(DEVICE)).x_hat[0]])
 
 # %%
 n_latent = model.latent_dim
