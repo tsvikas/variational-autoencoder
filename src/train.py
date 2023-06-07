@@ -39,13 +39,13 @@ def get_logger(project_name: str):
     return logger
 
 
-def get_datamodule():
+def get_datamodule(batch_size: int = 512):
     return datamodules.ImagesDataModule(
         # see torchvision.datasets for available datasets
         "FashionMNIST",
         num_channels=1,
         num_classes=10,
-        batch_size=512,
+        batch_size=batch_size,
         num_workers=os.cpu_count() - 1,
         train_transforms=[
             # transforms.RandomHorizontalFlip(),
@@ -121,9 +121,11 @@ def train(
     latent_dim: int = 32,
     latent_noise: float = 0.1,
     channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+    checkpoint_path: str = None,
+    batch_size: int = 512,
 ):
     seed = seed_everything(seed)
-    datamodule = get_datamodule()
+    datamodule = get_datamodule(batch_size=batch_size)
     model = get_model(
         num_channels=datamodule.num_channels,
         latent_dim=latent_dim,
@@ -178,7 +180,9 @@ def train(
     # run trainer
     trainer.test(model, datamodule=datamodule, verbose=False)
     t_start = time.time()
-    trainer.fit(model, datamodule=datamodule)
+    trainer.fit(
+        model, datamodule=datamodule, ckpt_path=checkpoint_path and str(checkpoint_path)
+    )
     t_total = time.time() - t_start
     trainer.logger.log_metrics({"trainer/total_time": t_total})
     trainer.test(model, datamodule=datamodule)
