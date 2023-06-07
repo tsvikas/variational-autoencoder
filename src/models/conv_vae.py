@@ -217,6 +217,7 @@ class ConvVAE(base.ImageVAE):
         latent_noise: float = 0.0,
         first_kernel_size: int = 5,
         image_size: int = 32,
+        act_fn=nn.functional.gelu,
         **kwargs,
     ):
         super().__init__(**kwargs, num_channels=num_channels, image_size=image_size)
@@ -228,7 +229,7 @@ class ConvVAE(base.ImageVAE):
             latent_dim,
             first_kernel_size=first_kernel_size,
             image_size=image_size,
-            # act_fn=nn.LeakyReLU()
+            act_fn=act_fn,
         )
         self.decoder = decoder_class(
             num_channels,
@@ -236,7 +237,7 @@ class ConvVAE(base.ImageVAE):
             latent_dim,
             first_kernel_size=first_kernel_size,
             image_size=image_size,
-            # act_fn=nn.LeakyReLU()
+            act_fn=act_fn,
         )
 
         self.latent_dim = latent_dim
