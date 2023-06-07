@@ -19,6 +19,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms.functional as TF  # noqa: N812
+from einops import rearrange
 from IPython.core.display_functions import display
 from ipywidgets import interact
 from torchvision.transforms import ToTensor
@@ -85,10 +86,10 @@ print(x_real.shape)
 
 
 # %%
-def show_tensors(imgs: list[torch.Tensor], normalize=True):
+def show_tensors(imgs: list[torch.Tensor], normalize=True, figsize=None):
     if not isinstance(imgs, list):
         imgs = [imgs]
-    fig, axss = plt.subplots(ncols=len(imgs), squeeze=False)
+    fig, axss = plt.subplots(ncols=len(imgs), squeeze=False, figsize=figsize)
     axs = axss[0]
     for i, img in enumerate(imgs):
         if normalize:
@@ -105,7 +106,7 @@ for x in [x_rand, x_real]:
 # %%
 n_latent = model.latent_dim
 
-lims = (-2, 2, 0.01)
+lims = (-3, 3, 0.01)
 all_lims = {f"x{i:02}": lims for i in range(n_latent)}
 
 
@@ -118,5 +119,18 @@ def show_from_latent(**inputs):
 
 
 interact(show_from_latent, **all_lims)
+
+# %%
+n = 30
+lim = 3
+x = torch.linspace(-lim, lim, n)
+y = torch.linspace(-lim, lim, n)
+z = torch.cartesian_prod(x, y)
+
+assert z.shape[1] == 2
+outs = model.decoder(z.to(DEVICE))
+out = rearrange(outs, "(i j) c h w -> (i c h) (j w)", i=n, j=n)
+
+show_tensors(out, figsize=(10, 10))
 
 # %%
