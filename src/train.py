@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 
 import torch
+import typer
 import wandb
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
@@ -13,6 +14,8 @@ from torchvision import transforms
 import datamodules
 import models
 from datamodules import noise
+
+app = typer.Typer()
 
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
@@ -61,12 +64,18 @@ def get_datamodule():
     )
 
 
-def get_model(num_channels):
+def get_model(
+    num_channels: int,
+    latent_dim: int = 32,
+    latent_noise: float = 0.1,
+    channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+):
     return models.ConvAutoencoder(
-        latent_dim=8,
+        latent_dim=latent_dim,
         image_size=32,
-        latent_noise=0.1,
+        latent_noise=latent_noise,
         num_channels=num_channels,
+        channels=channels,
         # # FullyConnectedAutoEncoder
         # hidden_sizes=(256, 64, 8),
         # encoder_last_layer=torch.nn.LayerNorm,
@@ -105,13 +114,24 @@ def get_model(num_channels):
     )
 
 
-def train(seed):
+@app.command()
+def train(
+    seed: int = 42,
+    max_epochs: int = 30,
+    latent_dim: int = 32,
+    latent_noise: float = 0.1,
+    channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+):
     seed = seed_everything(seed)
     datamodule = get_datamodule()
-    model = get_model(datamodule.num_channels)
+    model = get_model(
+        num_channels=datamodule.num_channels,
+        latent_dim=latent_dim,
+        latent_noise=latent_noise,
+        channels=channels,
+    )
 
     # trainer settings
-    max_epochs = 30
     trainer_callbacks = [
         callbacks.EarlyStopping("loss/validation", min_delta=0.0005),
     ]
@@ -168,4 +188,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()
