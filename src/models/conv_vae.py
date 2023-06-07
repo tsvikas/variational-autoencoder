@@ -87,6 +87,7 @@ class Encoder(nn.Module):
         act_fn: nn.Module | Callable[[torch.Tensor], torch.Tensor] = nn.functional.gelu,
         latent_act_fn: type[nn.Module] = nn.Tanh,
         first_kernel_size: int = 7,
+        image_size: int = 32,
     ):
         """
         Args:
@@ -97,6 +98,8 @@ class Encoder(nn.Module):
         """
         super().__init__()
         self.act = act_fn
+        self.image_size = image_size
+        self.bottleneck_size = image_size // 2 // 2 // 2 // 2
 
         self.conv = nn.Conv2d(
             num_input_channels,
@@ -107,15 +110,19 @@ class Encoder(nn.Module):
             bias=False,
         )
 
-        # 28x28 => 14x14
         self.down1 = DownBlock(channels[0], channels[1], act_fn)
-        # 14x14 => 7x7
         self.down2 = DownBlock(channels[1], channels[2], act_fn)
-        # 7x7 => 4x4
         self.down3 = DownBlock(channels[2], channels[3], act_fn)
 
-        self.flatten = nn.Flatten()
-        self.linear = nn.Linear(2 * 2 * channels[3], latent_dim)
+        self.flatten = Rearrange(
+            "b c h w -> b (c h w)",
+            h=self.bottleneck_size,
+            w=self.bottleneck_size,
+            c=channels[3],
+        )
+        self.linear = nn.Linear(
+            self.bottleneck_size * self.bottleneck_size * channels[3], latent_dim
+        )
         self.latent_act = latent_act_fn()
 
     def forward(self, x):
@@ -138,6 +145,7 @@ class Decoder(nn.Module):
         latent_dim: int,
         act_fn: type[nn.Module] = nn.functional.gelu,
         first_kernel_size: int = 7,
+        image_size: int = 32,
     ):
         """
         Args:
@@ -147,11 +155,16 @@ class Decoder(nn.Module):
            act_fn : Activation function used throughout the decoder network
         """
         super().__init__()
-
-        self.linear = nn.Linear(latent_dim, 2 * 2 * channels[3])
-        self.reshape = Rearrange("b (c h w) -> b c h w", h=2, w=2)
         self.act = act_fn
+        self.image_size = image_size
+        self.bottleneck_size = image_size // 2 // 2 // 2 // 2
 
+        self.linear = nn.Linear(
+            latent_dim, self.bottleneck_size * self.bottleneck_size * channels[3]
+        )
+        self.reshape = Rearrange(
+            "b (c h w) -> b c h w", h=self.bottleneck_size, w=self.bottleneck_size
+        )
         self.up1 = UpBlock(channels[3], channels[2], act_fn)
         self.up2 = UpBlock(channels[2], channels[1], act_fn)
         self.up3 = UpBlock(channels[1], channels[0], act_fn)
@@ -179,31 +192,36 @@ class Decoder(nn.Module):
 class ConvAutoencoder(base.ImageAutoEncoder):
     def __init__(
         self,
-        channels: tuple[int, ...] = (16, 16, 16, 16),
+        channels: tuple[int, int, int, int] = (16, 16, 16, 16),
         latent_dim: int = 8,
         encoder_class: type[nn.Module] = Encoder,
         decoder_class: type[nn.Module] = Decoder,
         num_channels: int = 1,
-        width: int = 32,
-        height: int = 32,
         latent_noise: float = 0.0,
         first_kernel_size: int = 5,
+        image_size: int = 32,
         **kwargs,
     ):
-        super().__init__(**kwargs, num_channels=num_channels)
+        super().__init__(**kwargs, num_channels=num_channels, image_size=image_size)
         self.save_hyperparameters()
         # Creating encoder and decoder
         self.encoder = encoder_class(
-            num_channels, channels, latent_dim, first_kernel_size=first_kernel_size
+            num_channels,
+            channels,
+            latent_dim,
+            first_kernel_size=first_kernel_size,
+            image_size=image_size,
         )
         self.decoder = decoder_class(
-            num_channels, channels, latent_dim, first_kernel_size=first_kernel_size
+            num_channels,
+            channels,
+            latent_dim,
+            first_kernel_size=first_kernel_size,
+            image_size=image_size,
         )
 
         self.latent_dim = latent_dim
         self.num_input_channels = num_channels
-        self.width = width
-        self.height = height
         self.latent_noise = latent_noise
 
     def forward(self, x):
