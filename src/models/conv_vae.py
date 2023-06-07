@@ -195,7 +195,7 @@ class Decoder(nn.Module):
         return x
 
 
-class ConvVAE(base.ImageAutoEncoder):
+class ConvVAE(base.ImageVAE):
     def __init__(
         self,
         channels: tuple[int, int, int, int] = (16, 16, 16, 16),
