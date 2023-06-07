@@ -37,9 +37,11 @@ class SimpleLightningModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
+        self.log("trainer/total_examples", float(self.total_examples))
         self.step(batch, batch_idx, "validation", evaluate=True)
 
     def test_step(self, batch, batch_idx):
+        self.log("trainer/total_examples", float(self.total_examples))
         self.step(batch, batch_idx, "test", evaluate=True)
 
 
