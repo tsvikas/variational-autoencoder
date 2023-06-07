@@ -7,13 +7,15 @@ from einops.layers.torch import Rearrange
 from . import base
 from .base import VAEOutput
 
+ActivationT = Callable[[torch.Tensor], torch.Tensor]
+
 
 class DownBlock(nn.Module):
     def __init__(
         self,
         in_channels: int,
         out_channels: int,
-        act_fn: nn.Module | Callable[[torch.Tensor], torch.Tensor],
+        act_fn: ActivationT,
     ):
         super().__init__()
         self.shortcut = nn.Sequential(
@@ -44,7 +46,7 @@ class UpBlock(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        act_fn: type[nn.Module] = nn.GELU,
+        act_fn: ActivationT = nn.functional.gelu,
         output_padding: int = 1,
     ):
         super().__init__()
@@ -85,8 +87,8 @@ class Encoder(nn.Module):
         num_input_channels: int,
         channels: tuple[int],
         latent_dim: int,
-        act_fn: nn.Module | Callable[[torch.Tensor], torch.Tensor] = nn.functional.gelu,
-        latent_act_fn: type[nn.Module] = nn.Tanh,
+        act_fn: ActivationT = nn.functional.gelu,
+        latent_act_fn: type[nn.Module] = nn.Identity,
         first_kernel_size: int = 7,
         image_size: int = 32,
     ):
@@ -148,7 +150,7 @@ class Decoder(nn.Module):
         num_input_channels: int,
         channels: tuple[int],
         latent_dim: int,
-        act_fn: type[nn.Module] = nn.functional.gelu,
+        act_fn: ActivationT = nn.functional.gelu,
         first_kernel_size: int = 7,
         image_size: int = 32,
     ):
