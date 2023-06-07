@@ -5,6 +5,7 @@ import torch.nn as nn
 from einops.layers.torch import Rearrange
 
 from . import base
+from .base import VAEOutput
 
 
 class DownBlock(nn.Module):
@@ -120,20 +121,24 @@ class Encoder(nn.Module):
             w=self.bottleneck_size,
             c=channels[3],
         )
-        self.linear = nn.Linear(
+        self.mu = nn.Linear(
+            self.bottleneck_size * self.bottleneck_size * channels[3], latent_dim
+        )
+        self.log_var = nn.Linear(
             self.bottleneck_size * self.bottleneck_size * channels[3], latent_dim
         )
         self.latent_act = latent_act_fn()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         x = self.act(self.conv(x))
         x = self.down1(x)
         x = self.down2(x)
         x = self.down3(x)
         x = self.flatten(x)
-        x = self.linear(x)
         x = self.latent_act(x)
-        return x
+        mu = self.mu(x)
+        log_var = self.log_var(x)
+        return mu, log_var
 
 
 # %%
@@ -188,8 +193,7 @@ class Decoder(nn.Module):
         return x
 
 
-# %%
-class ConvAutoencoder(base.ImageAutoEncoder):
+class ConvVAE(base.ImageAutoEncoder):
     def __init__(
         self,
         channels: tuple[int, int, int, int] = (16, 16, 16, 16),
@@ -224,12 +228,18 @@ class ConvAutoencoder(base.ImageAutoEncoder):
         self.num_input_channels = num_channels
         self.latent_noise = latent_noise
 
-    def forward(self, x):
+    def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
+        """
+        Reparameterization trick to sample from N(mu, var) from N(0,1).
+        """
+        std = torch.exp(log_var * 0.5)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
+    def forward(self, x: torch.Tensor) -> VAEOutput:
         """The forward function takes in an image and returns the reconstructed image."""
-        z = self.encoder(x)
-        if self.training and self.latent_noise > 0.0:
-            # Add some noise to the latent representation
-            z = z + torch.randn_like(z) * self.latent_noise
+        mu, log_var_2 = self.encoder(x)
         # z is the latent representation
+        z = self.reparameterize(mu, log_var_2)
         x_hat = self.decoder(z)
-        return x_hat
+        return VAEOutput(x_hat=x_hat, mu=mu, log_var_2=log_var_2)

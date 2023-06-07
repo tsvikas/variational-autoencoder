@@ -1,9 +1,26 @@
+import dataclasses
 from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F  # noqa: N812
 from torchmetrics.functional.classification import multiclass_accuracy
+
+
+class HasXHat:
+    x_hat: torch.Tensor
+
+
+@dataclasses.dataclass
+class AutoEncoderOutput:
+    x_hat: torch.Tensor
+
+
+@dataclasses.dataclass
+class VAEOutput(AutoEncoderOutput):
+    x_hat: torch.Tensor
+    mu: torch.Tensor
+    log_var_2: torch.Tensor
 
 
 class SimpleLightningModule(pl.LightningModule):
@@ -188,13 +205,26 @@ class AutoEncoder(LightningModuleWithScheduler):
 
     n_images_to_save = 8
 
+    def loss_function(self, batch, out: HasXHat):
+        x, target = batch
+        assert out.x_hat.shape == x.shape
+        loss = F.mse_loss(out.x_hat, target)
+        return loss
+
     def step(self, batch, batch_idx, stage: str, *, evaluate=False):
         x, target = batch
         assert x.shape == target.shape
-        x2 = self(x)
-        assert x2.shape == x.shape
-        loss = F.mse_loss(x2, target)
-        self.log(f"loss/{stage}", loss, prog_bar=evaluate)
+        out: AutoEncoderOutput = self(x)
+        loss = self.loss_function(batch, out)
+
+        if isinstance(loss, dict):
+            assert "loss" in loss, "Primary loss must be present"
+            for k, v in loss:
+                self.log(f"loss/{stage}/{k}", v, prog_bar=evaluate)
+            loss = loss["loss"]
+        else:
+            self.log(f"loss/{stage}", loss, prog_bar=evaluate)
+
         if stage == "validation" and self.logger:
             if self.global_step == 0 and batch_idx == 0:
                 self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
@@ -203,8 +233,36 @@ class AutoEncoder(LightningModuleWithScheduler):
                     "image/target", list(target[: self.n_images_to_save])
                 )
             if batch_idx == 0:
-                self.logger.log_image("image/pred", list(x2[: self.n_images_to_save]))
+                self.logger.log_image(
+                    "image/pred", list(out.x_hat[: self.n_images_to_save])
+                )
         return loss
+
+
+class VAE(AutoEncoder):
+    def __init__(self, kl_weight: float = 0.005, *args, **kwargs):
+        """
+        Magic constant from https://github.com/AntixK/PyTorch-VAE/
+        """
+        super().__init__(*args, **kwargs)
+        self.kl_weight = kl_weight
+
+    def loss_function(self, batch, out: VAEOutput) -> dict[str, torch.Tensor]:
+        x, target = batch
+        assert out.x_hat.shape == x.shape
+        reconstruction_loss = F.mse_loss(out.x_hat, target)
+        log_var_2 = out.log_var_2
+        mu = out.mu
+
+        kl_loss = 0.5 * (-log_var_2 + log_var_2.exp() + mu**2 - 1).sum(dim=1).mean(
+            dim=0
+        )
+        loss = reconstruction_loss + self.kl_weight * kl_loss
+        return dict(
+            loss=loss,
+            reconstruction_loss=reconstruction_loss.detach(),
+            kl_loss=kl_loss.detach(),
+        )
 
 
 class ImageAutoEncoder(AutoEncoder):

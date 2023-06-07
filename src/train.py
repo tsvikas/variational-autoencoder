@@ -70,7 +70,7 @@ def get_model(
     latent_noise: float = 0.1,
     channels: tuple[int, int, int, int] = (16, 16, 32, 32),
 ):
-    return models.ConvAutoencoder(
+    return models.ConvVAE(
         latent_dim=latent_dim,
         image_size=32,
         latent_noise=latent_noise,

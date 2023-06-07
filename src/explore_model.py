@@ -33,7 +33,7 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 DEVICE = torch.device("mps") if torch.backends.mps.is_available() else DEVICE
 
 # %%
-ModelClass = models.ConvAutoencoder
+ModelClass = models.ConvVAE
 dataset_name = "FashionMNIST"
 datamodule = ImagesDataModule(dataset_name, 1, 10)
 
