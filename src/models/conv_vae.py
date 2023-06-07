@@ -228,6 +228,7 @@ class ConvVAE(base.ImageVAE):
             latent_dim,
             first_kernel_size=first_kernel_size,
             image_size=image_size,
+            # act_fn=nn.LeakyReLU()
         )
         self.decoder = decoder_class(
             num_channels,
@@ -235,6 +236,7 @@ class ConvVAE(base.ImageVAE):
             latent_dim,
             first_kernel_size=first_kernel_size,
             image_size=image_size,
+            # act_fn=nn.LeakyReLU()
         )
 
         self.latent_dim = latent_dim
