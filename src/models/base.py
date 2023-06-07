@@ -254,10 +254,12 @@ class VAE(AutoEncoder):
         log_var_2 = out.log_var_2
         mu = out.mu
 
-        kl_loss = 0.5 * (-log_var_2 + log_var_2.exp() + mu**2 - 1).sum(dim=1).mean(
-            dim=0
+        kl_loss = (
+            0.5
+            * (-log_var_2 + log_var_2.exp() + mu**2 - 1).sum(dim=1).mean(dim=0)
+            * self.kl_weight
         )
-        loss = reconstruction_loss + self.kl_weight * kl_loss
+        loss = reconstruction_loss + kl_loss
         return dict(
             loss=loss,
             reconstruction_loss=reconstruction_loss.detach(),
