@@ -226,7 +226,7 @@ class AutoEncoder(LightningModuleWithScheduler):
             self.log(f"loss/{stage}", loss, prog_bar=evaluate)
 
         if stage == "validation" and self.logger:
-            if self.global_step == 0 and batch_idx == 0:
+            if batch_idx == 0:
                 self.logger.log_image("image/src", list(x[: self.n_images_to_save]))
             if self.global_step == 0 and batch_idx == 0:
                 self.logger.log_image(
