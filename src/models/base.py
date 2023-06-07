@@ -219,8 +219,8 @@ class AutoEncoder(LightningModuleWithScheduler):
 
         if isinstance(loss, dict):
             assert "loss" in loss, "Primary loss must be present"
-            for k, v in loss:
-                self.log(f"loss/{stage}/{k}", v, prog_bar=evaluate)
+            for k, v in loss.items():
+                self.log(f"{k}/{stage}", v, prog_bar=evaluate)
             loss = loss["loss"]
         else:
             self.log(f"loss/{stage}", loss, prog_bar=evaluate)
@@ -281,6 +281,41 @@ class ImageAutoEncoder(AutoEncoder):
         scheduler_monitor=None,
     ):
         super().__init__(
+            optimizer_cls=optimizer_cls,
+            optimizer_kwargs=optimizer_kwargs,
+            scheduler_cls=scheduler_cls,
+            scheduler_kwargs=scheduler_kwargs,
+            scheduler_interval=scheduler_interval,
+            scheduler_frequency=scheduler_frequency,
+            scheduler_add_total_steps=scheduler_add_total_steps,
+            scheduler_monitor=scheduler_monitor,
+        )
+        sample_batch_size = 32
+        self.image_size = image_size or 96
+        self.num_channels = num_channels
+        self.example_input_array = torch.empty(
+            sample_batch_size, num_channels, self.image_size, self.image_size
+        )
+
+
+class ImageVAE(VAE):
+    def __init__(
+        self,
+        image_size: int,
+        num_channels: int,
+        kl_weight: float,
+        *,
+        optimizer_cls=None,
+        optimizer_kwargs=None,
+        scheduler_cls=None,
+        scheduler_kwargs=None,
+        scheduler_interval="epoch",
+        scheduler_frequency=None,
+        scheduler_add_total_steps=False,
+        scheduler_monitor=None,
+    ):
+        super().__init__(
+            kl_weight=kl_weight,
             optimizer_cls=optimizer_cls,
             optimizer_kwargs=optimizer_kwargs,
             scheduler_cls=scheduler_cls,
