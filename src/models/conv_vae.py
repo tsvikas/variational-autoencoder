@@ -175,14 +175,22 @@ class Decoder(nn.Module):
         self.up1 = UpBlock(channels[3], channels[2], act_fn)
         self.up2 = UpBlock(channels[2], channels[1], act_fn)
         self.up3 = UpBlock(channels[1], channels[0], act_fn)
-        self.conv = nn.ConvTranspose2d(
-            channels[0],
-            num_input_channels,
-            kernel_size=first_kernel_size,
-            padding=first_kernel_size // 2,
-            stride=2,
-            output_padding=1,
-            bias=False,
+        self.final_layer_up = nn.Sequential(
+            nn.ConvTranspose2d(
+                channels[0],
+                channels[0],
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                output_padding=1,
+            ),
+            nn.BatchNorm2d(channels[0]),
+        )
+        self.sharpen = nn.Sequential(
+            nn.Conv2d(
+                channels[0], out_channels=num_input_channels, kernel_size=3, padding=1
+            ),
+            nn.Tanh(),
         )
 
     def forward(self, x):
@@ -191,7 +199,10 @@ class Decoder(nn.Module):
         x = self.up1(x)
         x = self.up2(x)
         x = self.up3(x)
-        x = self.conv(x)
+        x = self.final_layer_up(x)
+        x = self.act(x)
+        x = self.sharpen(x)
+        x = 3 * x
         return x
 
 
