@@ -87,7 +87,7 @@ def get_model(
         # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
         # # AdamW
         optimizer_cls=torch.optim.AdamW,
-        optimizer_kwargs=dict(lr=0.01),
+        optimizer_kwargs=dict(lr=0.0003),
         # # ReduceLROnPlateau
         # scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
         # scheduler_kwargs=dict(patience=1, threshold=0.05, factor=0.1),
@@ -117,12 +117,12 @@ def get_model(
 @app.command()
 def train(
     seed: int = 42,
-    max_epochs: int = 30,
+    max_epochs: int = 50,
     latent_dim: int = 32,
     latent_noise: float = 0.1,
-    channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+    channels: tuple[int, int, int, int] = (32, 64, 128, 256),
     checkpoint_path: str = None,
-    batch_size: int = 512,
+    batch_size: int = 2048,
 ):
     seed = seed_everything(seed)
     datamodule = get_datamodule(batch_size=batch_size)
@@ -135,7 +135,8 @@ def train(
 
     # trainer settings
     trainer_callbacks = [
-        callbacks.EarlyStopping("loss/validation", min_delta=0.0005),
+        # callbacks.EarlyStopping("loss/validation", min_delta=0.0, patience=10),
+        # callbacks.StochasticWeightAveraging(swa_lrs=1e-2),
     ]
 
     # set precision
