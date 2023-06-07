@@ -4,6 +4,7 @@ from pathlib import Path
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F  # noqa: N812
+from einops import rearrange
 from torchmetrics.functional.classification import multiclass_accuracy
 
 
@@ -205,6 +206,40 @@ class AutoEncoder(LightningModuleWithScheduler):
 
     n_images_to_save = 8
 
+    def __init__(
+        self,
+        sampler_lim: float = 3.0,
+        sampler_n: int = 30,
+        sampler_downsample_factor: int = 1,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.sampler_n = sampler_n
+        self.sampler_downsample_factor = sampler_downsample_factor
+        self.register_buffer(
+            "sampler_x", torch.linspace(-sampler_lim, sampler_lim, sampler_n)
+        )
+        self.register_buffer(
+            "sampler_y", torch.linspace(-sampler_lim, sampler_lim, sampler_n)
+        )
+        self.register_buffer(
+            "sampler_xy", torch.cartesian_prod(self.sampler_x, self.sampler_y)
+        )
+
+    def sample_latent(self):
+        if self.latent_dim != 2:
+            return None
+        with torch.inference_mode():
+            outs = self.decoder(self.sampler_xy)
+            out = rearrange(
+                outs, "(i j) c h w -> c (i h) (j w)", i=self.sampler_n, j=self.sampler_n
+            )
+            out = torch.nn.functional.avg_pool2d(
+                out, kernel_size=self.sampler_downsample_factor
+            )
+        return out
+
     def loss_function(self, batch, out: HasXHat):
         x, target = batch
         assert out.x_hat.shape == x.shape
@@ -236,6 +271,12 @@ class AutoEncoder(LightningModuleWithScheduler):
                 self.logger.log_image(
                     "image/pred", list(out.x_hat[: self.n_images_to_save])
                 )
+
+        if stage == "validation" and self.logger and batch_idx == 0:
+            sampled_images = self.sample_latent()
+            if sampled_images is not None:
+                self.logger.log_image("image/sampled", [sampled_images])
+
         return loss
 
 
