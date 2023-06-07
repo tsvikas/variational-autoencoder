@@ -184,9 +184,5 @@ def train(
     trainer.test(model, datamodule=datamodule)
 
 
-def main():
-    train(seed=None)
-
-
 if __name__ == "__main__":
     app()
