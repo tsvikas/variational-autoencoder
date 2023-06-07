@@ -4,6 +4,7 @@ import tempfile
 import time
 import warnings
 from pathlib import Path
+from typing import Literal
 
 import torch
 import typer
@@ -39,10 +40,10 @@ def get_logger(project_name: str):
     return logger
 
 
-def get_datamodule(batch_size: int = 512):
+def get_datamodule(dataset: str, batch_size: int = 512):
     return datamodules.ImagesDataModule(
         # see torchvision.datasets for available datasets
-        "FashionMNIST",
+        dataset,
         num_channels=1,
         num_classes=10,
         batch_size=batch_size,
@@ -126,9 +127,10 @@ def train(
     checkpoint_path: str = None,
     batch_size: int = 2048,
     kl_weight: float = 0.005,
+    dataset: Literal["FashionMNSIT", "KMNIST"] = "FashionMNIST",
 ):
     seed = seed_everything(seed)
-    datamodule = get_datamodule(batch_size=batch_size)
+    datamodule = get_datamodule(batch_size=batch_size, dataset=dataset)
     model = get_model(
         num_channels=datamodule.num_channels,
         latent_dim=latent_dim,
