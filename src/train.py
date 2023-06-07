@@ -15,7 +15,7 @@ import datamodules
 import models
 from datamodules import noise
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
