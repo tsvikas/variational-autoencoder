@@ -69,6 +69,7 @@ def get_model(
     latent_dim: int = 32,
     latent_noise: float = 0.1,
     channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+    kl_weight=0.005,
 ):
     return models.ConvVAE(
         latent_dim=latent_dim,
@@ -76,6 +77,7 @@ def get_model(
         latent_noise=latent_noise,
         num_channels=num_channels,
         channels=channels,
+        kl_weight=kl_weight,
         # # FullyConnectedAutoEncoder
         # hidden_sizes=(256, 64, 8),
         # encoder_last_layer=torch.nn.LayerNorm,
@@ -123,6 +125,7 @@ def train(
     channels: tuple[int, int, int, int] = (32, 64, 128, 256),
     checkpoint_path: str = None,
     batch_size: int = 2048,
+    kl_weight: float = 0.005,
 ):
     seed = seed_everything(seed)
     datamodule = get_datamodule(batch_size=batch_size)
@@ -131,6 +134,7 @@ def train(
         latent_dim=latent_dim,
         latent_noise=latent_noise,
         channels=channels,
+        kl_weight=kl_weight,
     )
 
     # trainer settings
