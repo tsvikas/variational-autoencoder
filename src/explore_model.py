@@ -66,12 +66,18 @@ def sort_dict(d: dict):
 all_ckpts = sort_dict(get_last_fn(subdir) for subdir in ckpt_dir.glob("*"))
 display(all_ckpts)
 
+
 # %%
 # torch.load(ckpt_dir/list(all_ckpts.values())[-1])['hyper_parameters']
 
 # %%
-model = ModelClass.load_latest_checkpoint(ckpt_dir, map_location=DEVICE)
-model.eval()
+
+
+def load_model():
+    return ModelClass.load_latest_checkpoint(ckpt_dir, map_location=DEVICE).eval()
+
+
+model = load_model()
 print(model.hparams)
 print(model)
 
@@ -121,16 +127,24 @@ def show_from_latent(**inputs):
 interact(show_from_latent, **all_lims)
 
 # %%
-n = 30
-lim = 3
-x = torch.linspace(-lim, lim, n)
-y = torch.linspace(-lim, lim, n)
-z = torch.cartesian_prod(x, y)
+model = load_model()
 
-assert z.shape[1] == 2
-outs = model.decoder(z.to(DEVICE))
-out = rearrange(outs, "(i j) c h w -> (i c h) (j w)", i=n, j=n)
 
+def sample_latent(model, n: int = 30, lim: float = 3.0, downsample_factor: int = 2):
+    x = torch.linspace(-lim, lim, n)
+    y = torch.linspace(-lim, lim, n)
+    z = torch.cartesian_prod(x, y)
+    assert z.shape[1] == 2
+    with torch.inference_mode():
+        outs = model.decoder(z.to(model.device))
+        out = rearrange(outs, "(i j) c h w -> c (i h) (j w)", i=n, j=n)
+        out = torch.nn.functional.avg_pool2d(out, kernel_size=downsample_factor)
+        # out = reduce(out, "c (h i) (w j) -> c h w", i=downsample_factor,j=downsample_factor, reduction="max")
+    return out
+
+
+out = sample_latent(model)
+print(out.shape)
 show_tensors(out, figsize=(10, 10))
 
 # %%
