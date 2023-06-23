@@ -109,6 +109,10 @@ def train(seed):
         enable_model_summary=False,
         enable_progress_bar=False,
         precision=precision,
+        logger=False,
+        callbacks=[
+            callbacks.RichModelSummary(max_depth=4),
+        ],
     )
     trainer_fast.fit(model, datamodule=datamodule)
 
@@ -117,7 +121,6 @@ def train(seed):
         max_epochs=max_epochs,
         logger=logger,
         callbacks=[
-            callbacks.RichModelSummary(max_depth=2),
             callbacks.RichProgressBar(),
             callbacks.LearningRateMonitor(logging_interval="step"),
             *trainer_callbacks,
