@@ -122,7 +122,7 @@ def train(seed):
         logger=logger,
         callbacks=[
             callbacks.RichProgressBar(),
-            callbacks.LearningRateMonitor(logging_interval="step"),
+            callbacks.LearningRateMonitor(logging_interval="step", log_momentum=True),
             *trainer_callbacks,
         ],
         precision=precision,
