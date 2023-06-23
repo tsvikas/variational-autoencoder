@@ -107,8 +107,10 @@ def train(seed):
     ]
 
     # set precision
-    torch.set_float32_matmul_precision("medium")
-    precision = "bf16-mixed"
+    precision = 16
+    if torch.cuda.is_available():
+        torch.set_float32_matmul_precision("medium")
+        precision = "16-mixed"
 
     # fast_dev_run, to prevent logging of failed runs
     trainer_fast = Trainer(
