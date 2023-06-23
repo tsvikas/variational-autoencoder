@@ -16,19 +16,24 @@ def train_val_split(
     train_transform,
     val_transform,
     dataset_cls,
+    generator: torch.Generator = None,
     **dataset_kwargs,
 ):
     """load a dataset and split it, using a different transform for train and val"""
     lengths = [train_length, val_length]
     with isolate_rng():
         dataset_train = dataset_cls(**dataset_kwargs, transform=train_transform)
-        train_split, _ = torch.utils.data.random_split(dataset_train, lengths)
+        train_split, _ = torch.utils.data.random_split(
+            dataset_train, lengths, generator=generator
+        )
     with isolate_rng():
         dataset_val = dataset_cls(**dataset_kwargs, transform=val_transform)
-        _, val_split = torch.utils.data.random_split(dataset_val, lengths)
+        _, val_split = torch.utils.data.random_split(
+            dataset_val, lengths, generator=generator
+        )
     # repeat to consume the random state
     dataset = dataset_cls(**dataset_kwargs)
-    torch.utils.data.random_split(dataset, lengths)
+    torch.utils.data.random_split(dataset, lengths, generator=generator)
     return train_split, val_split
 
 
@@ -84,6 +89,7 @@ class ImagesDataModule(LightningDataModule):
         self.val_size_or_frac = val_size_or_frac
         self.target_is_self = target_is_self
         self.noise_transforms = noise_transforms or []
+        self.generator = torch.Generator()
 
         # defined in self.setup()
         self.train_val_size = None
@@ -154,6 +160,7 @@ class ImagesDataModule(LightningDataModule):
             root=self.data_dir,
             train=True,
             download=False,
+            generator=self.generator,
         )
         self.test_set = self.dataset_cls(
             root=self.data_dir,
@@ -165,8 +172,12 @@ class ImagesDataModule(LightningDataModule):
             self.train_set = TransformedSelfDataset(
                 self.train_set, transforms=self.noise_transforms
             )
-            self.val_set = TransformedSelfDataset(self.val_set)
-            self.test_set = TransformedSelfDataset(self.test_set)
+            self.val_set = TransformedSelfDataset(
+                self.val_set, transforms=self.noise_transforms
+            )
+            self.test_set = TransformedSelfDataset(
+                self.test_set, transforms=self.noise_transforms
+            )
 
         # verify num_classes and num_channels
         if (num_classes := len(self.test_set.classes)) != self.num_classes:
@@ -220,6 +231,8 @@ class ImagesDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            pin_memory=True,
+            persistent_workers=True,
         )
 
     # we can use a x2 batch_size in validation and testing,
@@ -230,6 +243,8 @@ class ImagesDataModule(LightningDataModule):
             batch_size=self.batch_size * 2,
             shuffle=False,
             num_workers=self.num_workers,
+            pin_memory=True,
+            persistent_workers=True,
         )
 
     def test_dataloader(self):
@@ -238,6 +253,8 @@ class ImagesDataModule(LightningDataModule):
             batch_size=self.batch_size * 2,
             shuffle=False,
             num_workers=self.num_workers,
+            pin_memory=True,
+            persistent_workers=True,
         )
 
 
@@ -269,5 +286,6 @@ class TransformedSelfDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getattr__(self, item):
-        return getattr(self.dataset, item)
+    @property
+    def classes(self):
+        return self.dataset.classes
