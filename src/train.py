@@ -2,6 +2,7 @@
 import os
 import tempfile
 import time
+import warnings
 from pathlib import Path
 
 import torch
@@ -13,6 +14,11 @@ import datamodules
 import models
 from datamodules import noise
 
+warnings.filterwarnings("ignore", ".*does not have many workers.*")
+warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
+warnings.filterwarnings(
+    "ignore", ".*is supported for historical reasons but its usage is discouraged.*"
+)
 LOGS_DIR = Path(tempfile.gettempdir()) / "logs"
 
 
@@ -119,6 +125,9 @@ def train(seed):
     trainer_fast.fit(model, datamodule=datamodule)
 
     # set trainer
+    logger = get_logger(
+        project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
+    )
     trainer = Trainer(
         accelerator="auto",
         max_epochs=max_epochs,
