@@ -172,8 +172,12 @@ class ImagesDataModule(LightningDataModule):
             self.train_set = TransformedSelfDataset(
                 self.train_set, transforms=self.noise_transforms
             )
-            self.val_set = TransformedSelfDataset(self.val_set)
-            self.test_set = TransformedSelfDataset(self.test_set)
+            self.val_set = TransformedSelfDataset(
+                self.val_set, transforms=self.noise_transforms
+            )
+            self.test_set = TransformedSelfDataset(
+                self.test_set, transforms=self.noise_transforms
+            )
 
         # verify num_classes and num_channels
         if (num_classes := len(self.test_set.classes)) != self.num_classes:
