@@ -4,8 +4,10 @@ import tempfile
 import time
 import warnings
 from pathlib import Path
+from typing import Literal
 
 import torch
+import typer
 import wandb
 from pytorch_lightning import Trainer, callbacks, loggers, seed_everything
 from torchvision import transforms
@@ -13,6 +15,8 @@ from torchvision import transforms
 import datamodules
 import models
 from datamodules import noise
+
+app = typer.Typer(pretty_exceptions_enable=False)
 
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*but CUDA is not available.*")
@@ -36,35 +40,57 @@ def get_logger(project_name: str):
     return logger
 
 
-def get_datamodule():
+def get_datamodule(dataset: str, batch_size: int = 512):
     return datamodules.ImagesDataModule(
         # see torchvision.datasets for available datasets
-        "FashionMNIST",
+        dataset,
         num_channels=1,
         num_classes=10,
-        batch_size=512 if torch.cuda.is_available() else 64,
+        batch_size=batch_size,
         num_workers=os.cpu_count() - 1,
-        train_transforms=[transforms.CenterCrop(28)],
-        eval_transforms=[transforms.CenterCrop(28)],
+        train_transforms=[
+            # transforms.RandomHorizontalFlip(),
+            transforms.CenterCrop(32),
+        ],
+        eval_transforms=[
+            # transforms.RandomHorizontalFlip(),
+            transforms.CenterCrop(32),
+        ],
         target_is_self=True,
-        noise_transforms=[noise.GaussianNoise(0.1), noise.SaltPepperNoise(0.1, 0.1)],
+        noise_transforms=[
+            transforms.RandomApply([transforms.RandomErasing()], p=0.5),
+            transforms.RandomApply([noise.SaltPepperNoise(0.05, 0.05)], p=0.5),
+            transforms.RandomApply([noise.GaussianNoise(0.05)], p=0.5),
+        ],
     )
 
 
-def get_model(num_channels):
-    return models.FullyConnectedAutoEncoder(
+def get_model(
+    num_channels: int,
+    latent_dim: int = 32,
+    latent_noise: float = 0.1,
+    channels: tuple[int, int, int, int] = (16, 16, 32, 32),
+    kl_weight=0.005,
+):
+    return models.ConvVAE(
+        latent_dim=latent_dim,
+        image_size=32,
+        latent_noise=latent_noise,
         num_channels=num_channels,
-        hidden_sizes=(256, 64, 8),
-        encoder_last_layer=torch.nn.LayerNorm,
-        encoder_last_layer_args=(8,),
-        decoder_last_layer=torch.nn.Identity,
-        decoder_last_layer_args=(),
+        channels=channels,
+        kl_weight=kl_weight,
+        # # FullyConnectedAutoEncoder
+        # hidden_sizes=(256, 64, 8),
+        # encoder_last_layer=torch.nn.LayerNorm,
+        # encoder_last_layer_args=(8,),
+        # decoder_last_layer=torch.nn.Identity,
+        # decoder_last_layer_args=(),
         # # SGD
         # optimizer_cls=torch.optim.SGD,
         # optimizer_kwargs=dict(lr=0.1, momentum=0.9, weight_decay=5e-4),
         # # AdamW
         optimizer_cls=torch.optim.AdamW,
-        optimizer_kwargs=dict(lr=0.01),
+        optimizer_kwargs=dict(lr=0.0003),
         # # ReduceLROnPlateau
         # scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
         # scheduler_kwargs=dict(patience=1, threshold=0.05, factor=0.1),
@@ -84,23 +110,36 @@ def get_model(num_channels):
         # optimizer_cls=torch.optim.Adam,
         # optimizer_kwargs=dict(lr=0.05),
         # # ExponentialLR
-        scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-        scheduler_kwargs=dict(gamma=0.95),
-        scheduler_interval="epoch",
-        scheduler_add_total_steps=False,
+        # scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+        # scheduler_kwargs=dict(gamma=0.95),
+        # scheduler_interval="epoch",
+        # scheduler_add_total_steps=False,
     )
 
 
-def train(seed):
+@app.command()
+def train(
+    seed: int = 42,
+    max_epochs: int = 50,
+    latent_dim: int = 32,
+    latent_noise: float = 0.1,
+    channels: tuple[int, int, int, int] = (32, 64, 128, 256),
+    checkpoint_path: str = None,
+    batch_size: int = 2048,
+    kl_weight: float = 0.005,
+    dataset: Literal["FashionMNSIT", "KMNIST"] = "FashionMNIST",
+):
     seed = seed_everything(seed)
-    datamodule = get_datamodule()
-    model = get_model(datamodule.num_channels)
-    logger = get_logger(
-        project_name=f"{type(model).__name__.lower()}-{datamodule.dataset_name.lower()}"
+    datamodule = get_datamodule(batch_size=batch_size, dataset=dataset)
+    model = get_model(
+        num_channels=datamodule.num_channels,
+        latent_dim=latent_dim,
+        latent_noise=latent_noise,
+        channels=channels,
+        kl_weight=kl_weight,
     )
 
     # trainer settings
-    max_epochs = 30
     trainer_callbacks = [
         # callbacks.EarlyStopping("loss/validation", min_delta=0.0, patience=10),
         # callbacks.StochasticWeightAveraging(swa_lrs=1e-2),
@@ -148,15 +187,13 @@ def train(seed):
     # run trainer
     trainer.test(model, datamodule=datamodule, verbose=False)
     t_start = time.time()
-    trainer.fit(model, datamodule=datamodule)
+    trainer.fit(
+        model, datamodule=datamodule, ckpt_path=checkpoint_path and str(checkpoint_path)
+    )
     t_total = time.time() - t_start
     trainer.logger.log_metrics({"trainer/total_time": t_total})
     trainer.test(model, datamodule=datamodule)
 
 
-def main():
-    train(seed=None)
-
-
 if __name__ == "__main__":
-    main()
+    app()
