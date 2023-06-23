@@ -286,5 +286,6 @@ class TransformedSelfDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getattr__(self, item):
-        return getattr(self.dataset, item)
+    @property
+    def classes(self):
+        return self.dataset.classes
