@@ -105,6 +105,7 @@ def train(seed):
 
     # fast_dev_run, to prevent logging of failed runs
     trainer_fast = Trainer(
+        accelerator="auto",
         fast_dev_run=True,
         enable_model_summary=False,
         enable_progress_bar=False,
@@ -118,6 +119,7 @@ def train(seed):
 
     # set trainer
     trainer = Trainer(
+        accelerator="auto",
         max_epochs=max_epochs,
         logger=logger,
         callbacks=[
