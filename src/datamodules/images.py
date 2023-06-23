@@ -16,19 +16,24 @@ def train_val_split(
     train_transform,
     val_transform,
     dataset_cls,
+    generator: torch.Generator = None,
     **dataset_kwargs,
 ):
     """load a dataset and split it, using a different transform for train and val"""
     lengths = [train_length, val_length]
     with isolate_rng():
         dataset_train = dataset_cls(**dataset_kwargs, transform=train_transform)
-        train_split, _ = torch.utils.data.random_split(dataset_train, lengths)
+        train_split, _ = torch.utils.data.random_split(
+            dataset_train, lengths, generator=generator
+        )
     with isolate_rng():
         dataset_val = dataset_cls(**dataset_kwargs, transform=val_transform)
-        _, val_split = torch.utils.data.random_split(dataset_val, lengths)
+        _, val_split = torch.utils.data.random_split(
+            dataset_val, lengths, generator=generator
+        )
     # repeat to consume the random state
     dataset = dataset_cls(**dataset_kwargs)
-    torch.utils.data.random_split(dataset, lengths)
+    torch.utils.data.random_split(dataset, lengths, generator=generator)
     return train_split, val_split
 
 
@@ -84,6 +89,7 @@ class ImagesDataModule(LightningDataModule):
         self.val_size_or_frac = val_size_or_frac
         self.target_is_self = target_is_self
         self.noise_transforms = noise_transforms or []
+        self.generator = torch.Generator()
 
         # defined in self.setup()
         self.train_val_size = None
@@ -154,6 +160,7 @@ class ImagesDataModule(LightningDataModule):
             root=self.data_dir,
             train=True,
             download=False,
+            generator=self.generator,
         )
         self.test_set = self.dataset_cls(
             root=self.data_dir,
