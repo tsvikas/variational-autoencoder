@@ -8,12 +8,13 @@ authors = ["Tsvika S <tsvikas@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.11,!=3.11.0"
-torch = {version = "^2.0.0", source = "pytorch"}
-torchvision = {version = "^0.15.1", source = "pytorch"}
+torch = "^2.0.1"
+torchvision = "^0.15.2"
 pytorch-lightning = "^2.0.2"
 wandb = "^0.15.2"
 rich = "^13.3.5"
 einops = "^0.6.1"
+typer = {extras = ["all"], version = "^0.9.0"}
 
 [tool.poetry.group.jupyter.dependencies]
 jupyterlab = "^4.0.0"
@@ -26,6 +27,7 @@ python-lsp-server = "^1.7.3"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.1"
 ruff = "^0.0.264"
+black = "^23.3.0"
 
 [[tool.poetry.source]]
 name = "pytorch"
@@ -50,6 +52,7 @@ ignore = [
     "C408",
     "TRY003",
     "FBT002",
+    "PLW2901",
 ]
 src = ["src"]
 
