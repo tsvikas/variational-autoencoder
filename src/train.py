@@ -127,6 +127,7 @@ def train(seed):
         ],
         precision=precision,
         enable_model_summary=False,
+        log_every_n_steps=5 if len(datamodule.train_dataloader()) > 5 else 1,
     )
     trainer.logger.log_hyperparams({"seed": seed})
 
