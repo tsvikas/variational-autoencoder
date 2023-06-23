@@ -3,8 +3,8 @@ import os
 import tempfile
 import time
 import warnings
+from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 import torch
 import typer
@@ -117,6 +117,11 @@ def get_model(
     )
 
 
+class AvailableDatasets(str, Enum):
+    FashionMNIST = "FashionMNIST"
+    KMNIST = "KMNIST"
+
+
 @app.command()
 def train(
     seed: int = 42,
@@ -127,10 +132,10 @@ def train(
     checkpoint_path: str = None,
     batch_size: int = 2048,
     kl_weight: float = 0.005,
-    dataset: Literal["FashionMNSIT", "KMNIST"] = "FashionMNIST",
+    dataset: AvailableDatasets = AvailableDatasets.FashionMNIST,
 ):
     seed = seed_everything(seed)
-    datamodule = get_datamodule(batch_size=batch_size, dataset=dataset)
+    datamodule = get_datamodule(batch_size=batch_size, dataset=dataset.value)
     model = get_model(
         num_channels=datamodule.num_channels,
         latent_dim=latent_dim,
