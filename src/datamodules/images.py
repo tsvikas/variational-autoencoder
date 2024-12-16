@@ -55,9 +55,11 @@ class ImagesDataModule(LightningDataModule):
 
     def __init__(
         self,
-        dataset_name_or_cls: str
-        | type[torchvision.datasets.VisionDataset]
-        | type[torchvision.datasets.MNIST],
+        dataset_name_or_cls: (
+            str
+            | type[torchvision.datasets.VisionDataset]
+            | type[torchvision.datasets.MNIST]
+        ),
         num_channels: int,
         num_classes: int,
         *,

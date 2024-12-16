@@ -20,9 +20,11 @@ class DownBlock(nn.Module):
         super().__init__()
         self.shortcut = nn.Sequential(
             nn.AvgPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
-            if in_channels != out_channels
-            else nn.Identity(),
+            (
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
+                if in_channels != out_channels
+                else nn.Identity()
+            ),
         )
 
         self.conv1 = nn.Conv2d(
@@ -51,11 +53,13 @@ class UpBlock(nn.Module):
     ):
         super().__init__()
         self.shortcut = nn.Sequential(
-            nn.ConvTranspose2d(
-                in_channels, out_channels, kernel_size=1, stride=1, padding=0
-            )
-            if in_channels != out_channels
-            else nn.Identity(),
+            (
+                nn.ConvTranspose2d(
+                    in_channels, out_channels, kernel_size=1, stride=1, padding=0
+                )
+                if in_channels != out_channels
+                else nn.Identity()
+            ),
             nn.Upsample(scale_factor=2),
         )
         self.conv_t1 = nn.ConvTranspose2d(
